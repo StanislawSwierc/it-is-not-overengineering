@@ -1,0 +1,31 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+
+\usepackage{listings}
+\lstset{
+	language=[Sharp]C,
+	basicstyle= \ttfamily\small,
+	identifierstyle= \sffamily,
+	keywordstyle= \sffamily\bfseries,
+	commentstyle= \rmfamily,
+	stringstyle= \rmfamily\itshape,
+    numberstyle=\scriptsize,
+	showstringspaces=false,
+	tabsize=2,
+	numbers=left,
+}
+
+\begin{document}
+\begin{lstlisting}[float, caption={Sample code}]
+class Program
+{
+    static void Main(string[] args)
+    {
+        // This is comment
+        var text = "This is text";
+        var number = 12345;
+        Console.WriteLine(text + number.ToString());
+    }
+}
+\end{lstlisting}
+\end{document}
