@@ -1,0 +1,28 @@
+{
+  "name": "it-is-not-overengineering",
+  "version": "1.0.0",
+  "description": "Blog http://www.itisnotoverengineering.com",
+  "main": "index.js",
+  "dependencies": {
+    "grunt-markdown": "^0.7.0"
+  },
+  "devDependencies": {
+    "grunt": "^1.0.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StanislawSwierc/it-is-not-overengineering.git"
+  },
+  "keywords": [
+    "blog"
+  ],
+  "author": "Stanislaw Swierc (stanislaw.swierc@gmail.com)",
+  "license": "CC-BY-4.0",
+  "bugs": {
+    "url": "https://github.com/StanislawSwierc/it-is-not-overengineering/issues"
+  },
+  "homepage": "https://github.com/StanislawSwierc/it-is-not-overengineering#readme"
+}
