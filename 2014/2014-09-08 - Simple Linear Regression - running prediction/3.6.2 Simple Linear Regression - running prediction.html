@@ -1,0 +1,185 @@
+<h1>3.6.2 Simple Linear Regression - running prediction</h1>
+<blockquote>
+<p>This laboratory was inspired by <a href="http://www-bcf.usc.edu/~gareth/ISL">An Introduction to Statistical Learning, with Applications in R</a> book, section 3.6.2 <em>Simple Linear Regression</em> at page 110.
+Please refer to this resource for a detailed explanation of models and the nomenclature used in this post.</p>
+</blockquote>
+<p>In the previous post we've seen how to train a linear regression model.
+This post explains how to use the model to make predictions on the new data.</p>
+<h2>Running prediction in R</h2>
+<p>Once we have trained model we can use <code>predict</code> function to produce a prediction.</p>
+<pre><code>&gt; predict(lm.fit, data.frame(lstat = c(5, 10, 15)))
+
+       1        2        3 
+29.80359 25.05335 20.30310 
+</code></pre>
+<p>Alternatively, for <code>lm</code> models we can set the <code>interval</code> parameter to compute prediction intervals.</p>
+<pre><code>&gt; predict(
+    lm.fit,
+    data.frame(lstat = c(5, 10, 15)), interval = &quot;prediction&quot;)
+
+       fit       lwr      upr
+1 29.80359 17.565675 42.04151
+2 25.05335 12.827626 37.27907
+3 20.30310  8.077742 32.52846
+</code></pre>
+<p>From this results we can read that for example, the predicted value of the <code>medv</code> for the <code>lstat</code> of 10 is 25.05335 and its 95% prediction interval is (12.827626, 37.27907).</p>
+<h2>Running prediction in Azure Machine Learning</h2>
+<p>The process of running prediction in Azure is slightly different because it is optimized for the web.
+Instead of calling a function locally we will publish the trained model as an Azure Web Service.</p>
+<p>At first it may seem ridiculous to call a web service to run prediction on such a simple model, but on the second thought, it is actually great.
+What we will get it a fully operational, very scalable service which we can use straight away.
+Thanks to the nicely factored API we can continue to improve models without the need to update our clients.
+Finally, as we will see, the services are instrumented.
+The information about usage patterns will be saved and available though Azure portal.</p>
+<p>The process of publishing the model has been described well in the documentation.</p>
+<ul>
+<li><a href="http://azure.microsoft.com/en-us/documentation/articles/machine-learning-overview-of-azure-ml-process#publishing-an-azure-ml-web-service">Publishing an Azure ML Web Service</a></li>
+</ul>
+<p>The first step is to add a <code>Score Model</code> to the the experiment.
+It has two inputs, a trained model and a data set to score.
+This module has no configuration because it can infer it from the context.</p>
+<div style="text-align: center">
+    [![Score Model][img_score_small]][img_score]
+</div>
+<p>Next we need to click on its data set input and output and select &quot;Set as Publish Input&quot;</p>
+<div style="text-align: center">
+    [![Set as Publish Input][img_input]][img_input]
+</div>
+<p>and &quot;Set as Publish Output&quot; options accordingly.</p>
+<div style="text-align: center">
+    [![Set as Publish Output][img_output]][img_output]
+</div>
+<p>Once experiment has all the inputs and outputs set you can run it and the &quot;Publish Web Service&quot; command will be enabled.</p>
+<div style="text-align: center">
+    [![Publish as Web Service][img_publish]][img_publish]
+</div>
+<p>The system will create a service and redirect you to its management site.</p>
+<div style="text-align: center">
+    [![Service management][img_service]][img_service]
+</div>
+<p>From there you can test it directly in the browser or select <strong>API help page</strong> to see how to access it programaticallly.</p>
+<div style="text-align: center">
+    [![Service API][img_api]][img_api]
+</div>
+<p>At the bottom there are samples in C#, Python and R!
+Lets copy the code into R Studio.
+In order to pass server authorization we need to replace the dummy API key with a genuine key from the service site.
+We will also set the value of the <code>lstat</code> to 10.</p>
+<!--?prettify?-->
+<pre class="hljs"><code class="language-r"><span class="hljs-keyword">library</span>(<span class="hljs-string">"RCurl"</span>)
+<span class="hljs-keyword">library</span>(<span class="hljs-string">"RJSONIO"</span>)
+
+<span class="hljs-comment"># Accept SSL certificates issued by public Certificate Authorities</span>
+options(RCurlOptions = list(
+    cainfo = system.file(<span class="hljs-string">"CurlSSL"</span>, <span class="hljs-string">"cacert.pem"</span>, package = <span class="hljs-string">"RCurl"</span>)))
+
+h = basicTextGatherer()
+req = list(Id=<span class="hljs-string">"score00001"</span>,
+ Instance=list(FeatureVector=list(
+    <span class="hljs-string">"lstat"</span>= <span class="hljs-string">"10"</span>,
+    <span class="hljs-string">"medv"</span>= <span class="hljs-string">"0"</span>
+ ),GlobalParameters=fromJSON(<span class="hljs-string">'{}'</span>)))
+
+body = toJSON(req)
+api_key = <span class="hljs-string">"abc123"</span> <span class="hljs-comment"># Replace this with the API key for the web service</span>
+authz_hdr = paste(<span class="hljs-string">'Bearer'</span>, api_key, sep=<span class="hljs-string">' '</span>)
+
+h$reset()
+curlPerform(
+    url = <span class="hljs-string">"https://ussouthcentral.services.azureml.net/workspaces/..."</span>,
+    httpheader=c(
+        <span class="hljs-string">'Content-Type'</span> = <span class="hljs-string">"application/json"</span>,
+        <span class="hljs-string">'Authorization'</span> = authz_hdr),
+    postfields=body,
+    writefunction = h$update,
+    verbose = <span class="hljs-literal">TRUE</span>
+    )
+
+result = h$value()
+print(result)
+</code></pre>
+<p>This will produce the following output.
+Please notice that <code>curlPerform</code> is called with <code>verbose = TRUE</code>, thus there will be a lot of diagnostic information.
+It can be very helpful during development but you will most likely want to suppress it when you create a client library that makes  use of the service.</p>
+<pre><code>* About to connect() to ussouthcentral.services.azureml.net port 443 (#0)
+*   Trying 191.238.226.212... * connected
+* Connected to ussouthcentral.services.azureml.net (191.238.226.212)
+    port 443 (#0)
+* successfully set certificate verify locations:
+*   CAfile: C:/Users/stansw/Documents/R/win-library/3.1/RCurl/CurlSSL/
+   cacert.pem CApath: none
+* SSL connection using AES128-SHA
+* Server certificate:
+* 	 subject: CN=ussouthcentral.services.azureml.net
+* 	 start date: 2014-07-01 19:23:34 GMT
+* 	 expire date: 2016-06-30 19:23:34 GMT
+* 	 subjectAltName: ussouthcentral.services.azureml.net matched
+* 	 issuer: C=US; ST=Washington; L=Redmond; O=Microsoft Corporation;
+ 	    OU=Microsoft IT; CN=Microsoft IT SSL SHA2
+* 	 SSL certificate verify ok.
+&gt; POST /workspaces/fb65c4e602654cb6a9fe4aae12daf762/services/
+    8a8527dd062548e5b600e6023c0a69a0/score HTTP/1.1
+Host: ussouthcentral.services.azureml.net
+Accept: */*
+Content-Type: application/json
+Authorization: Bearer abc123
+Content-Length: 116
+
+&lt; HTTP/1.1 200 OK
+&lt; Content-Length: 28
+&lt; Content-Type: application/json; charset=utf-8
+&lt; Server: Microsoft-HTTPAPI/2.0
+&lt; x-ms-request-id: 44bbb8b4-cf0d-4b70-8ca0-83326c5265f5
+&lt; Date: Mon, 08 Sep 2014 05:30:49 GMT
+&lt; 
+* Connection #0 to host ussouthcentral.services.azureml.net left intact
+OK 
+ 0 
+
+[1] &quot;[\&quot;10\&quot;,\&quot;0\&quot;,\&quot;25.0533473418032\&quot;]&quot;
+</code></pre>
+<p>The last line is the most interesting bit.
+It tells us that for <code>lstat</code> value 10 the model prediction value is 25.0533473418032.
+As expected, this value is precisely what we received when we run the model inside R.</p>
+<h2>Summary</h2>
+<ul>
+<li>In this laboratory we saw how to run the prediction both in R and in Azure Machine Learning Studio.</li>
+<li>Both models returned the same value.</li>
+<li>When working in R it was very easy to get some statistical information about the prediction such as the 95% intervals.</li>
+<li>By publishing our experiment we created a fully operational Web Service hosted in Azure.</li>
+</ul>
+<h2>In the next part</h2>
+<p>In the next part we will expand the feature space and training a multiple linear regression model.</p>
+<h2>References</h2>
+<ul>
+<li>
+<p><a href="http://azure.microsoft.com/en-us/documentation/articles/machine-learning-overview-of-azure-ml-process#publishing-an-azure-ml-web-service">Publishing an Azure ML Web Service</a></p>
+</li>
+<li>
+<p><a href="https://studio.azureml.net/Help/html/f82fa52e-52bf-4696-b5ac-e185367ab9c2.htm" title="Setting the Publishing Input and Output">Setting the Publishing Input and Output</a></p>
+</li>
+<li>
+<p><a href="http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/Boston.html">Housing Values in Suburbs of Boston</a></p>
+</li>
+<li>
+<p><a href="http://azure.microsoft.com/en-us/services/machine-learning">Microsoft Azure Machine Learning</a> (<a href="http://azure.microsoft.com/en-us/trial/get-started-machine-learning">Trial</a>)</p>
+</li>
+<li>
+<p><a href="http://blogs.technet.com/b/machinelearning">Microsoft Machine Learning Blog</a></p>
+</li>
+<li>
+<p><a href="http://online.stanford.edu/course/statistical-learning-winter-2014">Statistical Learning course at Stanford Online</a></p>
+</li>
+<li>
+<p><a href="http://www-bcf.usc.edu/~gareth/ISL">An Introduction to Statistical Learning with Applications in R</a>  (<a href="http://www.springer.com/statistics/statistical+theory+and+methods/book/978-1-4614-7137-0">Springer</a>, <a href="http://www.amazon.com/Introduction-Statistical-Learning-Applications-Statistics/dp/1461471370">Amazon</a>)</p>
+</li>
+<li>
+<p><a href="http://cran.rstudio.com/index.html">The Comprehensive R Archive Network</a></p>
+</li>
+<li>
+<p><a href="http://www.rstudio.com">RStudio</a></p>
+</li>
+</ul>
+<hr>
+<p>This post and all the resources are available on GitHub:</p>
+<p>https://github.com/StanislawSwierc/it-is-not-overengineering/tree/master</p>

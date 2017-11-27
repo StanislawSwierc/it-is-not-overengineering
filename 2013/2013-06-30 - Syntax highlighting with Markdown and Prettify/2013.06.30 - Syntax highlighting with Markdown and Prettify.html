@@ -1,0 +1,115 @@
+<h1>Syntax highlighting with Markdown and Prettify</h1>
+<p>In my <a href="./../../2013/06/syntax-highlighting-with-tex4ht.html">last</a> post I described how TeX4ht can be used to do syntax highlighting of source code for a web publishing.
+Today I will tell you something about the solution I chose for my blog.
+In order to keep the text of my posts and the related code in a single place I am using <a href="http://daringfireball.net/projects/markdown/">Markdown</a>.</p>
+<p>Out of the box Markdown supports <a href="http://daringfireball.net/projects/markdown/syntax#precode">code block syntax</a> which wraps up source code with <code>pre</code> and <code>code</code> tags.
+It looks nice but colors would definitely improve the readability.</p>
+<pre><code>class Program
+{
+    static void Main(string[] args)
+    {
+        // This is comment
+        var text = &quot;This is text&quot;;
+        var number = 12345;
+        Console.WriteLine(text + number.ToString());
+    }
+}
+</code></pre>
+<h2>Google Code Prettify</h2>
+<p><a href="http://code.google.com/p/google-code-prettify/">Google Code Prettify</a> is the project which can help us achieve just that.
+This is a Javascript library which when loaded, rewrites existing code sections and improves their style.
+One of the best features is that there is no need to explicitly specify the language as it can be automatically detected.
+If the snippet is too short for the detection to work you may specify it explicitly but most of the time it just works.</p>
+<h3>Load Prettify</h3>
+<p>In order to turn on Prettify on a site it is necessary to reference the script.
+It will load the CSS, Javascript modules and look for the marked code sections to fix.</p>
+<!--?prettify?-->
+<pre><code>&lt;script src=&quot;https://google-code-prettify.googlecode.com/svn/loader/
+    run_prettify.js&quot;&gt;&lt;/script&gt; 
+</code></pre>
+<h3>Mark code sections</h3>
+<p>Prettify will only touch code sections which were marked.
+Two different markers are supported.</p>
+<p>In the normal HTML it is best to add a <code>prettyprint</code> class to the <code>&lt;pre&gt;</code>, <code>&lt;code&gt;</code> or <code>&lt;xmp&gt;</code> elements:</p>
+<!--?prettify?-->
+<pre><code>&lt;pre class=&quot;prettyprint&quot;&gt;
+source code here
+&lt;/pre&gt;
+</code></pre>
+<p>If you do not have access to the <code>&lt;pre&gt;</code> tag, which is a case for Markdown, there is another way.
+The code needs to be preceded with a special instruction:</p>
+<!--?prettify?-->
+<pre><code>&lt;?prettify?&gt;
+&lt;pre&gt;
+source code here
+&lt;/pre&gt;
+</code></pre>
+<h2>Markdown and Prettify</h2>
+<p>According to the documentation, in order to add block-level HTML elements in Markdown they have to be surrounded with blank lines and they should not be indented with tabs or spaces.
+Knowing that one could try to enable prettify with the following markup.</p>
+<!--?prettify?-->
+<pre><code>&lt;?prettify?&gt;
+
+    source code
+</code></pre>
+<p>Unfortunately <code>&lt;?prettify?&gt;</code> is not recognized by the Markdown translator and the effect is pretty far from what was intended.
+Prettify instruction gets translated to a HTML section.
+The left and right angle brackets get escaped.
+Because the marker is effectively gone, the source code stays plain.</p>
+<!--?prettify?-->
+<pre><code>&lt;p&gt;&amp;lt;?prettify?&amp;gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;source code&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+<p>We could fix it with some Javascript which would run on the page load and translate <code>&lt;div class=&quot;prettify&quot;&gt;</code> tags, which are recognized by Markdown, with <code>&lt;?prettify?&gt;</code>.
+This wouldn't be too hard, but there is much easier solution!</p>
+<p>In the <strong><a href="http://code.google.com/p/google-code-prettify/source/browse/trunk/js-modules/prettify.js">prettify.js</a></strong>, around the line 883 there is a very interesting comment about how the tags <code>&lt;?tag?&gt;</code> are parsed by the HTML 5.
+The part '<code>nt === 8</code>' was just what we were looking for.
+It turns out that in some browsers it can be interpreted as a normal comment node <code>&lt;!--tag--&gt;</code>, thus both nodes have to be treated the same way by the library.
+This is a huge deal, especially for Markdown because comments are supported!</p>
+<!--?prettify?-->
+<pre><code>    var nt = preceder.nodeType;
+    // &lt;?foo?&gt; is parsed by HTML 5 to a comment node (8)
+    // like &lt;!--?foo?--&gt;, but in XML is a processing instruction
+    var value = (nt === 7 || nt === 8) &amp;&amp; preceder.nodeValue;
+</code></pre>
+<h2>Conclusions</h2>
+<p>In order to mark a Markdown code block to be processed by a Prettify one can add <code>&lt;!--?prettify?--&gt;</code> element before the block.
+Of course there needs to be a single empty line for everything to work.</p>
+<p>The following markup:</p>
+<pre><code>&lt;!--?prettify?--&gt;
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // This is comment
+            var text = &quot;This is text&quot;;
+            var number = 12345;
+            Console.WriteLine(text + number.ToString());
+        }
+    }
+</code></pre>
+<p>produces the following result:</p>
+<!--?prettify?-->
+<pre><code>class Program
+{
+    static void Main(string[] args)
+    {
+        // This is comment
+        var text = &quot;This is text&quot;;
+        var number = 12345;
+        Console.WriteLine(text + number.ToString());
+    }
+}
+</code></pre>
+<p>Although this solution relies on some undocumented features I think that it is a reliable one.
+I will use it to write my blog.</p>
+<h2>References</h2>
+<ul>
+<li><a href="http://daringfireball.net/projects/markdown/">Markdown</a></li>
+<li><a href="http://code.google.com/p/google-code-prettify/">Google Code Prettify</a></li>
+<li><a href="./../../2013/06/syntax-highlighting-with-tex4ht.html">Syntax highlighting with TeX4ht</a></li>
+</ul>
+<hr>
+<p>This post and all the resources are available on GitHub:</p>
+<p>https://github.com/StanislawSwierc/it-is-not-overengineering/tree/master</p>

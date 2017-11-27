@@ -1,0 +1,146 @@
+<h1>How to migrate VSTS reports from Excel to Power BI?</h1>
+<blockquote>
+<p>Tags: <code>Power BI</code>, <code>Power Query</code>, <code>VSTS</code></p>
+</blockquote>
+<blockquote>
+<p>Disclaimer: I'm the author of the <a href="https://marketplace.visualstudio.com/items?itemName=stansw.vsts-open-in-powerbi">Open in Power BI</a> extension.</p>
+</blockquote>
+<p>If you are using Visual Studio Team Services and you want to see the status of the project in a form of reports in Power BI you are probably using great <a href="https://marketplace.visualstudio.com/items?itemName=blueprint.vsts-open-work-items-in-excel">VSTS Open in Excel</a> extension that was available for years now.
+It allows you to load results of your queries into Excel.
+It has been very popular among Power BI enthusiasts because of the great integration between Power BI and Excel.</p>
+<p>I've talked to many people who setup elaborate data pipelines which pump data from VSTS into Excel and then into Power BI Service so that it can power the reach reports.
+The most typical problem with this approach is how to trigger data refresh operation.
+Power BI can handle refresh operations provided that you use one of the supported data sources.
+Unfortunately, as you can read in the <em>&quot;VSTS Open in Excel&quot;</em> extension page it requires <em>&quot;Visual Studio 2017&quot;</em> or <em>&quot;Team Foundation Server Office Integration 2017&quot;</em> to run.
+This makes it impossible to use directly in the Power BI Service.
+You can work around this problem by manually refreshing Excel workbook and publishing updated data.
+In this post I will briefly describe what <a href="https://marketplace.visualstudio.com/items?itemName=stansw.vsts-open-in-powerbi">Open in Power BI</a> extension does and how it can help in such scenarios.</p>
+<p>Official documentation describes this extension as:</p>
+<blockquote>
+<p>Use this extension to create stunning reports in Power BI based on the Work Item Queries saved in Team Services.
+You can <strong>configure your reports to be refreshed</strong> daily to make sure your reports are always up to date.
+When you modify your Query by adding extra filters or columns these changes will be automatically reflected in Power BI upon next refresh.</p>
+</blockquote>
+<p>What is particularly interesting is that with this extension you configure data refresh in Power BI Service.
+It is possible because it was build on top of <em>Power Query</em> functions, which are part of Visual Studio Team Services Power BI Data Connector <a href="https://www.visualstudio.com/en-us/docs/report/powerbi/data-connector-functions#vstscontents">[3]</a>.
+These functions are available in the Service and in the Desktop since January 9 2017.
+Let's see how we can use it in our scenario.</p>
+<h2>Problem statement</h2>
+<p>Given existing report build on top of <a href="https://marketplace.visualstudio.com/items?itemName=blueprint.vsts-open-work-items-in-excel">VSTS Open in Excel</a> extension, migrate it to <a href="https://marketplace.visualstudio.com/items?itemName=stansw.vsts-open-in-powerbi">Open in Power BI</a>, publish dataset to Power BI Service and configure refresh.</p>
+<h2>Solution</h2>
+<p>First let's look into how one could build a reporting pipeline on top of <a href="https://marketplace.visualstudio.com/items?itemName=blueprint.vsts-open-work-items-in-excel">VSTS Open in Excel</a> extension.
+As always, it all starts with a WIQL query.
+This time it is <em>&quot;Flat&quot;</em> query, which is a flat table of work items (I like to be creative with names).</p>
+<div class="separator" style="clear: both; text-align: center;">
+  <a href="img/wiql.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;">
+    <img border="0" src="img/wiql.png" width="640" height="286" />
+  </a>
+</div>
+<h3>Create reports based on &quot;VSTS Open in Excel&quot; extension</h3>
+<p>I can click &quot;Open in Excel&quot; button and the query result will appear in Excel.
+Please notice that columns have the right names and type - neat!</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="https://2.bp.blogspot.com/-_trLwUdVvnU/WXQ-YQza85I/AAAAAAABI5w/Tanl_nEJi1AsoSu4DTH-46QniQyUxpIjACPcBGAYYCw/s1600/excel.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://2.bp.blogspot.com/-_trLwUdVvnU/WXQ-YQza85I/AAAAAAABI5w/Tanl_nEJi1AsoSu4DTH-46QniQyUxpIjACPcBGAYYCw/s640/excel.png" width="640" height="410" data-original-width="696" data-original-height="446" /></a></div>
+<p>I don't need to make any changes here.
+I can simply save the spreadsheet locally and switch to Power BI Desktop to import the data.</p>
+<p>I can do it by selecting <em>Get Data</em> and then <em>Excel</em>.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="https://1.bp.blogspot.com/-d8VNTwBSg6I/WXQ-YlR5KXI/AAAAAAABI5Q/uaRJYE3noLkYggsHO19sFKFFOtvr1R4wgCLcBGAs/s1600/get-data-button.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://1.bp.blogspot.com/-d8VNTwBSg6I/WXQ-YlR5KXI/AAAAAAABI5Q/uaRJYE3noLkYggsHO19sFKFFOtvr1R4wgCLcBGAs/s1600/get-data-button.png" data-original-width="415" data-original-height="146" /></a></div>
+<div class="separator" style="clear: both; text-align: center;"><a href="https://1.bp.blogspot.com/-ksSNiTG4rWU/WXQ-YYy-Q2I/AAAAAAABI5M/_FlL9lq0-kI9K-Wosidi15QOYpmiihWlACLcBGAs/s1600/get-data.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://1.bp.blogspot.com/-ksSNiTG4rWU/WXQ-YYy-Q2I/AAAAAAABI5M/_FlL9lq0-kI9K-Wosidi15QOYpmiihWlACLcBGAs/s1600/get-data.png" data-original-width="621" data-original-height="678" /></a></div>
+<p>This will show me all the tables I can import. Please notice that there are <strong>2 tables</strong> I can choose from: <em>VSTS_e394e0b4...</em> and <em>Sheet1</em>.
+It is because when you open a query in Excel the data is imported to a table embedded in a spreadsheet.
+You can refer to it in both ways but <em>VSTS_e394e0b4...</em> is a <strong>much</strong> better option.
+It will not only fetch the data but also <strong>metadata</strong> such as column names and types.
+As a result the <em>Power Query</em> code will be cleaner.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="https://4.bp.blogspot.com/-54b1vY322AE/WXQ-YBCvsRI/AAAAAAABI5A/-NHV4aIvsOUTQ8J3JL06B8DWMboxQFEvACLcBGAs/s1600/excel-table-selection.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://4.bp.blogspot.com/-54b1vY322AE/WXQ-YBCvsRI/AAAAAAABI5A/-NHV4aIvsOUTQ8J3JL06B8DWMboxQFEvACLcBGAs/s1600/excel-table-selection.png" data-original-width="694" data-original-height="433" /></a></div>
+<p>For my query this produced the following result.
+Column names were imported correctly, while types had to be set explicitly in code.
+This code was automatically generated and it got the types almost right because  <code>Tags</code> is set to <code>type any</code> instead of <code>type text</code>.
+This column had no data, thus, Power BI failed to detect its type.
+I would need to manually set it to text if I wanted to perform some transformations later.</p>
+<p>In order to make this migration more realistic I will customize the query.
+One of the popular customization  I've seen in the past is splitting <code>Area Path</code> into multiple level columns.
+These columns make it easy to create roll-up reports.
+I've updated the <em>Power Query</em> code accordingly.</p>
+<pre><code class="language-pq">let
+    Source = Excel.Workbook(File.Contents(&quot;C:\Sources\example.xlsx&quot;), null, true),
+    VSTS_e394e0b4_9fbb_4489_b0ea_f38c7103f8bb_Table = Source{[Item=&quot;VSTS_e394e0b4_9fbb_4489_b0ea_f38c7103f8bb&quot;,Kind=&quot;Table&quot;]}[Data],
+    #&quot;Changed Type&quot; = Table.TransformColumnTypes(VSTS_e394e0b4_9fbb_4489_b0ea_f38c7103f8bb_Table, {
+        {&quot;ID&quot;, Int64.Type}, 
+        {&quot;Work Item Type&quot;, type text}, 
+        {&quot;Title&quot;, type text}, 
+        {&quot;Assigned To&quot;, type text}, 
+        {&quot;State&quot;, type text}, 
+        {&quot;Tags&quot;, type any}, // Type detection failed for Tags!
+        {&quot;Area Path&quot;, type text}}),
+
+    // -- Customization -------------------------------------------------------
+    #&quot;Split Column by Delimiter&quot; = Table.SplitColumn(#&quot;Changed Type&quot;,&quot;Area Path&quot;,
+        Splitter.SplitTextByDelimiter(&quot;\&quot;, QuoteStyle.Csv),
+        {&quot;Area Path.1&quot;, &quot;Area Path.2&quot;}),
+    #&quot;Changed Type1&quot; = Table.TransformColumnTypes(#&quot;Split Column by Delimiter&quot;, {
+        {&quot;Area Path.1&quot;, type text}, 
+        {&quot;Area Path.2&quot;, type text}})
+in
+    #&quot;Changed Type1&quot;
+</code></pre>
+<p>After loading the dataset I can publish it to <em>Power BI Service</em>, but there are some problems with scheduling refresh as you can see in the screen below.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="https://2.bp.blogspot.com/-SbrveZZ4Rp8/WXQ-YIyaWdI/AAAAAAABI5E/OSlkYUaodvs6fT7Of6PTT86IqzHKI_26ACLcBGAs/s1600/excel-refresh-settings.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://2.bp.blogspot.com/-SbrveZZ4Rp8/WXQ-YIyaWdI/AAAAAAABI5E/OSlkYUaodvs6fT7Of6PTT86IqzHKI_26ACLcBGAs/s1600/excel-refresh-settings.png" data-original-width="638" data-original-height="614" /></a></div>
+<p>First, you need to install <em>Data Gateway</em> because <em>Power BI Service</em> cannot access path <code>C:\Sources\example.xlsx</code>.
+It is also worth noticing that the gateway has to run on the same machine where the file is stored and you cannot move the file, otherwise the refresh operation will fail.
+Second, if you modify the query and add more columns, then they will not show up in the dataset.
+Finally, refresh will only <strong>fetch data that is already present in the spreadsheet</strong>.
+This means that unless you manually open <em>Excel</em> file and press <em>Refresh</em> button in the <em>Team</em> toolbar, you will end up with the stale data.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="https://1.bp.blogspot.com/-I9rZAJhtr9w/WXQ-YMdrHgI/AAAAAAABI48/kDy0eIiHTE4gzARhRGXW7pHsx3-1VlFAQCLcBGAs/s1600/excel-refresh-button.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://1.bp.blogspot.com/-I9rZAJhtr9w/WXQ-YMdrHgI/AAAAAAABI48/kDy0eIiHTE4gzARhRGXW7pHsx3-1VlFAQCLcBGAs/s1600/excel-refresh-button.png" data-original-width="529" data-original-height="374" /></a></div>
+<p>There are some workarounds such a saving workbook to <em>SharePoint</em> and scripting refresh operation, but they are more complicated than what an average user could set up.</p>
+<h3>Create reports based on &quot;Open in Power BI&quot; extension</h3>
+<p>Right now we should have a pretty good understanding of how one can use <em>Excel</em> to build reports in <em>Power BI</em>.
+Let's see how to achieve similar result with <em>Open in Power BI</em> extension.</p>
+<p>Just as before I start with the query result page where I can find <em>Open in Power BI</em> button.
+This time, instead of opening intermediate app (<em>Excel</em>), it will launch <em>Power BI Desktop</em> straight away with a dataset ready to refresh.</p>
+<p>When I open <em>Query Editor</em> I can immediately see some differences.
+Probably the biggest one is that there are 2 queries: <code>Work Items</code> and <code>Functions</code>.
+The latter is darker because it is not a table, it is a <em>Power Query</em> module that exports functions used in the other queries.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="https://3.bp.blogspot.com/-dq2X9_9w5o4/WXQ-Yp1yKrI/AAAAAAABI5U/pwuw4fhGAIEwgrGaPTyYPu8Ia_gIrAEoQCLcBGAs/s1600/powerbi-queries.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://3.bp.blogspot.com/-dq2X9_9w5o4/WXQ-Yp1yKrI/AAAAAAABI5U/pwuw4fhGAIEwgrGaPTyYPu8Ia_gIrAEoQCLcBGAs/s1600/powerbi-queries.png" data-original-width="572" data-original-height="388" /></a></div>
+<p>I will ignore <code>Functions</code> and look into how I can modify the <code>Work Items</code> query to apply the same customization as before.
+The query text is shorter and probably looks cleaner.
+It is divided into definition of parameters and then <code>Functions[WiqlRunFlatQueryById]()</code> is used to fetch a table.
+Column names and types are the same and I can use my old code directly.
+The only thing that I need to update is the name of the variable that is passed to <code>Table.SplitColumn</code> function.
+Previously it was <code>Table.SplitColumn(#&quot;Changed Type&quot;</code> and now it is <code>Table.SplitColumn(Source</code>.
+That's it, no other changes!</p>
+<pre><code class="language-pq">let
+    url = &quot;https://stansw.visualstudio.com&quot;, 
+    project = &quot;vsts-open-in-powerbi&quot;,
+    id = &quot;d5349265-9c9d-4808-933a-c3d27b731657&quot;,
+
+    Source = Functions[WiqlRunFlatQueryById](url, [Project = project], id),
+
+    // -- Customization -------------------------------------------------------
+    #&quot;Split Column by Delimiter&quot; = Table.SplitColumn(Source,&quot;Area Path&quot;,
+        Splitter.SplitTextByDelimiter(&quot;\&quot;, QuoteStyle.Csv),
+        {&quot;Area Path.1&quot;, &quot;Area Path.2&quot;}),
+    #&quot;Changed Type1&quot; = Table.TransformColumnTypes(#&quot;Split Column by Delimiter&quot;, {
+        {&quot;Area Path.1&quot;, type text}, 
+        {&quot;Area Path.2&quot;, type text}})
+in
+    #&quot;Changed Type1&quot;
+
+</code></pre>
+<p>Now I can publish dataset to <em>Power BI Service</em> and inspect the settings page.
+First thing that I can notice is in the <em>Gateway connection</em> - <em>Connect directly</em> is the only available option.
+I do not need to install anything on my machine to get the refresh going!</p>
+<p>Section <em>Data source credentials</em> is equally interesting.
+There is one entry <em>Visual Studio Team Services</em>.
+Because <em>Open in Power BI</em> extension is built on top of functions from the offial <em>Data Connector</em>, I can use standard authentication mechanism
+<a href="https://www.visualstudio.com/en-us/docs/report/powerbi/data-connector-functions#vstscontents">[3]</a>.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="https://1.bp.blogspot.com/-aq9CY5qtmS0/WXQ-Y1EmUGI/AAAAAAABI5Y/cZbdwZqKBtU1KY6tM0TRFp8KQSFxS65aACLcBGAs/s1600/powerbi-refresh-settings.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://1.bp.blogspot.com/-aq9CY5qtmS0/WXQ-Y1EmUGI/AAAAAAABI5Y/cZbdwZqKBtU1KY6tM0TRFp8KQSFxS65aACLcBGAs/s1600/powerbi-refresh-settings.png" data-original-width="617" data-original-height="538" /></a></div>
+<p>Finally I can expand <em>Scheduled refresh</em> section and define how often I want my dataset to be refreshed.</p>
+<h2>Conclusions</h2>
+<p><em>Open in Power BI</em> extension was created with <em>Power BI</em> scenarios in mind, thus, it is much easier to use than building pipeline with <em>VSTS Open in Excel</em>.
+At the end of the day both solutions give me a table so any customization I create in <em>Power Query</em> for one solution, I will be able to easily move to another.
+The strongest advantage of <em>Open in Power BI</em> approach is that it works strainght away in <em>Power BI Service</em> without the gateway.</p>
+<h2>References:</h2>
+<ol>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=blueprint.vsts-open-work-items-in-excel">Visual Studio Team Services Marketplace - VSTS Open in Excel</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=stansw.vsts-open-in-powerbi">Visual Studio Team Services Marketplace - Open in Power BI</a></li>
+<li><a href="https://www.visualstudio.com/en-us/docs/report/powerbi/data-connector-functions#vstscontents">Visual Studio Team Services - Functions available in Power BI Data Connector</a></li>
+</ol>

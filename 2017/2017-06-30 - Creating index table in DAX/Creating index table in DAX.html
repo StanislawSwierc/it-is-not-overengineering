@@ -1,0 +1,108 @@
+<h1>Creating index table in DAX</h1>
+<p>Tags: <code>powerbi</code>, <code>dax</code></p>
+<p>Sometimes, when you create advanced calculations in DAX, you need to create an auxiliary index table which contains increasing number like in the example below.</p>
+<table>
+<thead>
+<tr>
+<th>Index</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+</tr>
+<tr>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<p>There are several ways one can approach this problem.
+Marco Russo described some of them for the general case of creating static tables in his article <a href="https://www.sqlbi.com/articles/create-static-tables-in-dax-using-the-datatable-function">[1]</a>.
+Here I would like to present a different approach which works great for the more specific problem of index tables.</p>
+<h2>Problem statement</h2>
+<p>Create a table with one column where rows are increasing from 1 to 5.</p>
+<table>
+<thead>
+<tr>
+<th>Index</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+</tr>
+<tr>
+<td>3</td>
+</tr>
+<tr>
+<td>4</td>
+</tr>
+<tr>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+<h2>Solution</h2>
+<p>In Power BI we can create such table with <em>Power Query</em> or directly in <em>DAX</em> using <a href="https://powerbi.microsoft.com/en-us/documentation/powerbi-desktop-calculated-tables/"><em>calculated tables</em></a>. In the first approach we would use <a href="https://msdn.microsoft.com/en-us/library/mt260934.aspx"><code>List.Numbers</code></a> function.
+Second, is more challenging as there is no such function in <em>DAX</em>.
+Luckily, there is <code>CALENDAR</code> function which can be used to generate a table!</p>
+<pre class="hljs"><code class="language-dax">IndexTable =
+<span class="hljs-keyword">VAR</span> Length = <span class="hljs-number">5</span>
+<span class="hljs-keyword">VAR</span> DummyDate = <span class="hljs-built_in">DATE</span> ( <span class="hljs-number">2000</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span> )
+<span class="hljs-keyword">RETURN</span>
+    <span class="hljs-built_in">CALENDAR</span> ( DummyDate, DummyDate + Length )
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2000-01-01 00:00:00</td>
+</tr>
+<tr>
+<td>2000-01-02 00:00:00</td>
+</tr>
+<tr>
+<td>2000-01-03 00:00:00</td>
+</tr>
+<tr>
+<td>2000-01-04 00:00:00</td>
+</tr>
+<tr>
+<td>2000-01-05 00:00:00</td>
+</tr>
+</tbody>
+</table>
+<p>Now we just need to clean it up by converting dates to numbers, adding new column, and removing the original column <a href="http://www.sqlbi.com/articles/best-practices-using-summarize-and-addcolumns">[4]</a>.</p>
+<pre class="hljs"><code class="language-dax">IndexTable =
+<span class="hljs-keyword">VAR</span> Length = <span class="hljs-number">5</span>
+<span class="hljs-keyword">VAR</span> DummyDate = <span class="hljs-built_in">DATE</span> ( <span class="hljs-number">2000</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span> )
+<span class="hljs-keyword">RETURN</span>
+    <span class="hljs-built_in">FILTER</span> (
+        <span class="hljs-built_in">SUMMARIZE</span> (
+            <span class="hljs-built_in">ADDCOLUMNS</span> (
+                <span class="hljs-built_in">CALENDAR</span> ( DummyDate, DummyDate + Length ),
+                <span class="hljs-string">"Index"</span>, <span class="hljs-built_in">INT</span> ( [Date] ) - <span class="hljs-built_in">INT</span> ( DummyDate )
+            ),
+            [Index]
+        ),
+        [Index] &gt; <span class="hljs-number">0</span>
+    )
+</code></pre>
+<h2>References:</h2>
+<ol>
+<li><a href="https://www.sqlbi.com/articles/create-static-tables-in-dax-using-the-datatable-function">Create Static Tables in DAX Using the DATATABLE Function</a></li>
+<li><a href="https://msdn.microsoft.com/en-us/library/mt260934.aspx">Power Query M function reference - List.Numbers</a></li>
+<li><a href="https://msdn.microsoft.com/en-us/library/dn802546.aspx">DAX Function Reference - CALENDAR</a></li>
+<li><a href="http://www.sqlbi.com/articles/best-practices-using-summarize-and-addcolumns">Best Practices Using SUMMARIZE and ADDCOLUMNS</a></li>
+<li><a href="https://powerbi.microsoft.com/en-us/documentation/powerbi-desktop-calculated-tables/">Calculated tables in Power BI Desktop</a></li>
+</ol>

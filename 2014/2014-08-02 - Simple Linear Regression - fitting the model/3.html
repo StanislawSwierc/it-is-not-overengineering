@@ -1,0 +1,93 @@
+<h1>3.6.2 Simple Linear Regression - fitting the model</h1>
+<blockquote>
+<p>This laboratory was inspired by <a href="http://www-bcf.usc.edu/~gareth/ISL">An Introduction to Statistical Learning, with Applications in R</a> book, section 3.6.2 <em>Simple Linear Regression</em> at page 110.
+Please refer to it for for a detailed explanation of models and the nomenclature used in this post.</p>
+</blockquote>
+<p>Previously we've seen how to load the <a href="http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/Boston.html"><code>Boston</code></a> from the <code>MASS</code> library.
+Now we will look into how we can fir a linear regression model.
+We will try to predict  median value of owner-occupied homes in $1000s (<code>medv</code>) based on just a single predictor which is the lower status of the population in percent (<code>lstat</code>).</p>
+<h2>Fitting linear regression model in R</h2>
+<p>In R one can fit a linear regression model using <code>lm()</code> function.
+Its basic syntax is <code>lm(y~x, data</code>, where <code>y</code> is the response, <code>x</code> is predictor and <code>data</code> is the data set.</p>
+<p>In order to fit the model to <code>Boston</code> data we can call:</p>
+<pre><code>&gt; lm.fit = lm(medv~lstat, data=Boston)
+</code></pre>
+<p>For basic information about the model we can type:</p>
+<pre><code>&gt; lm.fit
+
+Call:
+lm(formula = medv ~ lstat, data = Boston)
+
+Coefficients:
+(Intercept)        lstat  
+      34.55        -0.95  
+</code></pre>
+<p>It will print the function call used to creat the model as well as fitted coefficients.</p>
+<p>In order to get more detailed information we can type:</p>
+<pre><code>&gt; summary(lm.fit)
+
+Call:
+lm(formula = medv ~ lstat, data = Boston)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-15.168  -3.990  -1.318   2.034  24.500 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 34.55384    0.56263   61.41   &lt;2e-16 ***
+lstat       -0.95005    0.03873  -24.53   &lt;2e-16 ***
+---
+Signif. codes:  0 �***� 0.001 �**� 0.01 �*� 0.05 �.� 0.1 � � 1
+
+Residual standard error: 6.216 on 504 degrees of freedom
+Multiple R-squared:  0.5441,	Adjusted R-squared:  0.5432 
+F-statistic: 601.6 on 1 and 504 DF,  p-value: &lt; 2.2e-16
+</code></pre>
+<p>This gives us information about residuals, p-values and standard errors for the coefficients, as well as statistics for the model.</p>
+<h2>Fitting linear regression model in Azure Machine Learning</h2>
+<p>In order to repeat the same experiment in Azure Machine Learning we will start with modules created last time.</p>
+<p>In the first step we need to select the columns we want to work with.
+Drag one 'Project Columns' module (<code>Data Transformation -&gt; Manipulation</code>) to the experiment canvas and connect it with existing <code>Execute R Script</code> module:</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="http://1.bp.blogspot.com/--94jL0CZvoA/U9w5WKX7BmI/AAAAAAAAAko/4goo5srdYzA/s1600/20140802_project_columns.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="http://1.bp.blogspot.com/--94jL0CZvoA/U9w5WKX7BmI/AAAAAAAAAko/4goo5srdYzA/s1600/20140802_project_columns.png" /></a></div>
+<p>In the properties pane click on the <code>Launch column selector</code>:</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="http://3.bp.blogspot.com/-TAZE9ZRYzLE/U9w52EMEuJI/AAAAAAAAAkw/Ov39YmGAH_g/s1600/20140802_launch_column_selector.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="http://3.bp.blogspot.com/-TAZE9ZRYzLE/U9w52EMEuJI/AAAAAAAAAkw/Ov39YmGAH_g/s1600/20140802_launch_column_selector.png" /></a></div>
+<p>Select columns: <code>medv</code> and <code>lstat</code>.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="http://4.bp.blogspot.com/-MdsmUPPQPiE/U9w6IQ02b8I/AAAAAAAAAk8/pW0diEDvnUw/s1600/20140802_select_columns.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="http://4.bp.blogspot.com/-MdsmUPPQPiE/U9w6IQ02b8I/AAAAAAAAAk8/pW0diEDvnUw/s320/20140802_select_columns.png" /></a></div>
+<p>With the right data we can proceed to fitting the model.
+Drag the <code>Linear Regression</code> module (<code>Machine Learning -&gt; Initialize Model -&gt; Regression</code>) to the experiment canvas.
+To train the model we will also need one <code>Train Model</code> (<code>Machine Learning -&gt; Train</code>).</p>
+<p>Connect all the modules.
+Select <code>Train Model</code> and in the properties pane click on <code>Lauch column selector</code> to choose response column.
+This type only <code>medv</code> because that's the quantity we want to predict.</p>
+<p>The complete model should look like that:</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="http://1.bp.blogspot.com/-ipoEcd0rYWk/U9w78sKHGYI/AAAAAAAAAlI/qPjEzaPTdpA/s1600/20140802_model.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="http://1.bp.blogspot.com/-ipoEcd0rYWk/U9w78sKHGYI/AAAAAAAAAlI/qPjEzaPTdpA/s320/20140802_model.png" /></a></div>
+<p>Run it to fit the model to the data.</p>
+<p>You can visualize the output port of the <code>Train Model</code> module to see the result.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="http://4.bp.blogspot.com/-Xh0UCDFuK-Y/U9w8f8KkMMI/AAAAAAAAAlM/C7tQGc7GO1Q/s1600/20140802_fit1.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="http://4.bp.blogspot.com/-Xh0UCDFuK-Y/U9w8f8KkMMI/AAAAAAAAAlM/C7tQGc7GO1Q/s1600/20140802_fit1.png" /></a></div>
+<p>We can see that the coefficient values obtain from Azure Machine Learning are different that what we got in R.
+Instead of value <em>34.55</em> for the intercept (bias) we have <em>25.80</em>.
+Whereas coefficient for <code>lstat</code> changed from <em>-0.95</em> to <em>-11.43</em>.</p>
+<p>The reason why we observed this discrepant is because Azure Machine Learning uses more advanced model with learning rate and regularization, which we will get to in the future laboratories when we reach chapter 6 <em>Linear Model Selection and Regularization</em> <a href="http://www-bcf.usc.edu/~gareth/ISL">ISLR</a>.
+For now we will disable these features to reach parity between two models we've seen so far.</p>
+<p>Select <code>Linear Regression</code> module, go to the properties pane and select the following configuration.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="http://2.bp.blogspot.com/-61noWvJdLnU/U9w-uLnz8iI/AAAAAAAAAlY/b3k8tuDktmc/s1600/20140802_configuratin.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="http://2.bp.blogspot.com/-61noWvJdLnU/U9w-uLnz8iI/AAAAAAAAAlY/b3k8tuDktmc/s1600/20140802_configuratin.png" /></a></div>
+<p>Rerun the model and visualize the result.</p>
+<div class="separator" style="clear: both; text-align: center;"><a href="http://3.bp.blogspot.com/-j_TgVxuyL4Q/U9w_YDr2GyI/AAAAAAAAAlg/yegHcVPAZ4Y/s1600/20140802_fit2.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="http://3.bp.blogspot.com/-j_TgVxuyL4Q/U9w_YDr2GyI/AAAAAAAAAlg/yegHcVPAZ4Y/s1600/20140802_fit2.png" /></a></div>
+<p>Now we can see that the coefficient values match what we got at the beginning.
+Just as with R the model is described by its coefficients and we need to use other functions to get more information about its performance</p>
+<h2>In the next part</h2>
+<p>In the next part we will look into evaluating the trained model.</p>
+<h2>References</h2>
+<ul>
+<li><a href="http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/Boston.html">Housing Values in Suburbs of Boston</a></li>
+<li><a href="http://azure.microsoft.com/en-us/services/machine-learning">Microsoft Azure Machine Learning</a> (<a href="http://azure.microsoft.com/en-us/trial/get-started-machine-learning">Trial</a>)</li>
+<li><a href="http://blogs.technet.com/b/machinelearning">Microsoft Machine Learning Blog</a></li>
+<li><a href="http://online.stanford.edu/course/statistical-learning-winter-2014">Statistical Learning course at Stanford Online</a></li>
+<li><a href="http://www-bcf.usc.edu/~gareth/ISL">An Introduction to Statistical Learning with Applications in R</a>  (<a href="http://www.springer.com/statistics/statistical+theory+and+methods/book/978-1-4614-7137-0">Springer</a>, <a href="http://www.amazon.com/Introduction-Statistical-Learning-Applications-Statistics/dp/1461471370">Amazon</a>)</li>
+<li><a href="http://cran.rstudio.com/index.html">The Comprehensive R Archive Network</a></li>
+<li><a href="http://www.rstudio.com">RStudio</a></li>
+</ul>
+<hr>
+<p>This post and all the resources are available on GitHub:</p>
+<p>https://github.com/StanislawSwierc/it-is-not-overengineering/tree/master</p>

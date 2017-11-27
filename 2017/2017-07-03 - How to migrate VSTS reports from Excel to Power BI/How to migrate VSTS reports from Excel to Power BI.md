@@ -37,7 +37,11 @@ First let's look into how one could build a reporting pipeline on top of [VSTS O
 As always, it all starts with a WIQL query.
 This time it is *"Flat"* query, which is a flat table of work items (I like to be creative with names).
 
-<div class="separator" style="clear: both; text-align: center;"><a href="https://1.bp.blogspot.com/-tidDUkZo6D0/WXQ-Y2-zCNI/AAAAAAABI5g/mIy5cXhUVNMsxqp3CONyvR6Ea2mnH_VBQCPcBGAYYCw/s1600/wiql.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://1.bp.blogspot.com/-tidDUkZo6D0/WXQ-Y2-zCNI/AAAAAAABI5g/mIy5cXhUVNMsxqp3CONyvR6Ea2mnH_VBQCPcBGAYYCw/s640/wiql.png" width="640" height="286" data-original-width="836" data-original-height="373" /></a></div>
+<div class="separator" style="clear: both; text-align: center;">
+  <a href="img/wiql.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;">
+    <img border="0" src="img/wiql.png" width="640" height="286" />
+  </a>
+</div>
 
 ### Create reports based on "VSTS Open in Excel" extension
 

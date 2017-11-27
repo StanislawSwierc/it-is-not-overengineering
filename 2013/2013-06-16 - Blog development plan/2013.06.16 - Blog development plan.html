@@ -1,0 +1,105 @@
+<h1>Blog development plan</h1>
+<p>I'm quite a new to blogging but I know a lot about the software development.
+Are these two activities that different?
+They look alike to me:</p>
+<ul>
+<li>You write down your ideas in a language of your choice.</li>
+<li>You need to adhere to some rules like grammar.</li>
+<li>When a post is done it is pushed to a public site.</li>
+</ul>
+<p>Hey, that's exactly what software developers do all the time!</p>
+<p>Let's have a look at how this idea can be put in use.</p>
+<h2>Syntax</h2>
+<p>One of the most important decision is about the syntax used to write posts.
+Ideally the syntax should be very light so that the writer focuses on the content.
+Additionally it should have some capabilities to organize the document.</p>
+<p>I've taken into consideration the following options:</p>
+<ul>
+<li>HTML</li>
+<li>LaTeX + Tex4ht</li>
+<li>Markdown</li>
+</ul>
+<h3>HTML</h3>
+<p>I know that my posts will need to be converted to HTML at some point in time so why not just start with it.
+This language has a great tooling with <em>WYSWIG</em> editors.
+Moreover, it is the most powerful option.
+With pure HTML I should be able to write anything I like.</p>
+<p>The only problem is that it sometimes can be hard to read with many different tags obscuring the picture.
+This is particularly visible when it comes to embedded source code.
+The problem is even worse because in HTML there are two characters that demand special treatment: <code>&lt;</code> and <code>&amp;</code>.
+Left angle brackets are used to start tags whereas ampersands are used to denote HTML entities.
+In order to use them as literal characters, it is necessary to escape them as entities, e.g. <code>&amp;lt;</code>, and <code>&amp;amp;</code>.
+Even if they are inserted by an editor they will exist in the source, thus making it harder to read.</p>
+<h3>LaTeX + Tex4ht</h3>
+<p>An alternative solution, which should be attractive to all academics, is the LaTeX.
+With some tools like HTLaTeX it is possible to compile documents to HTML.</p>
+<p>I studied at a university where using LaTeX it is not mandatory but most of the instructors preferred this format.
+Therefore, I learned how to write LaTeX articles before I grasped the HTML.
+I still had the right environment which was a portable distribution of <a href="http://http://miktex.org/portable">MikTeX</a> with some of my favourite packages.
+In order to evaluate this option I created a sample post which contained some source code listings and images.</p>
+<p>During that process I found few resources which were particularly helpful:</p>
+<ul>
+<li>UK List of TeX Frequently Asked Questions</li>
+<li><a href="http://http://www.tex.ac.uk/cgi-bin/texfaq2html?label=LaTeX2HTML">Conversion from (La)TeX to HTML</a></li>
+<li>TeX Users Group</li>
+<li><a href="http://www.tug.org/applications/tex4ht/mn.html">TeX4ht: LaTeX and TeX for Hypertext</a></li>
+<li>StackExchange Tex</li>
+<li><a href="http://tex.stackexchange.com/questions/39309/convert-latex-to-html">Convert LaTeX to HTML</a></li>
+</ul>
+<p>Although it worked, it wasn't easy.
+The biggest problem I had was with the source code formatting.
+The <a href="http://www.ctan.org/tex-archive/macros/latex/contrib/listings">listings</a> package I used to produced beautiful listings in a PDF but when I run the 'tex4ht' they all looked much worse.
+Fonts had no longer constant width and nothing was aligned as it should.
+It turned out that <em>listings</em> is quite advanced and it has it's own algorithm to organize everything into columns.
+That's how this works with any any font you use but this solution didn't worked for HTML.</p>
+<p>I fixed it by changing the base font to be typewriter (<code>/ttfamily</code>).
+Everything was aligned again but I lost the bold style of the keywords.
+It made me think about using using colors instead.
+After all, this document won't be printed!</p>
+<p>I found a very interesting answer at the StackExchange.</p>
+<ul>
+<li><a href="http://tex.stackexchange.com/questions/64054/latex-to-html-preserving-code-coloring-from-listings">LaTeX to HTML preserving code coloring from listings</a></li>
+</ul>
+<p>This is the key idea:</p>
+<blockquote>
+<p>Imho a more simple approach is with fonts: if every style is connected to a different font then tex4ht surrounds the chars with classes which you can set through css.</p>
+<p>-- <cite><a href="http://tex.stackexchange.com/questions/64054/latex-to-html-preserving-code-coloring-from-listings">Ulrike Fischer</a></cite></p>
+</blockquote>
+<p>It worked like charm.
+I still had to compile the document few times and inspect the html to capture all the class names that I need to use in the css but it fast.
+Eventually I came up with a nicely colored source code listing.</p>
+<p>In summary, the experience wasn't bad but I had a feeling that I had to search for solutions and workarounds too often.
+I decided to look for something different.</p>
+<h3>Markdown</h3>
+<p>The third option that I took into consideration is <em>Markdown</em>.
+Initially I've been using it at <em>StackExchange</em> without knowing its name.
+I would just write a question or an answer and discover the syntax accidentally by typing and looking at the 'Preview' section.
+It was possible because of the philosophy it was created with.</p>
+<blockquote>
+<p><strong>Philosophy</strong></p>
+<p>Markdown is intended to be as easy-to-read and easy-to-write as is feasible.</p>
+<p>Readability, however, is emphasized above all else.
+A Markdown-formatted document should be publishable as-is, as plain text, without looking like it's been marked up with tags or formatting instructions.</p>
+<p>-- <cite><a href="http://daringfireball.net/projects/markdown/syntax#philosophy">John Gruber</a></cite></p>
+</blockquote>
+<p>One of the biggest advantage of this syntax, which was probably also admired by the creators of StackOverflow, is the <em>code block</em>.
+You can just paste your code inline, indent it by 4 spaces or 1 tab and it will be properly formatted.
+No tags, no commands, just indentation - perfect!</p>
+<p>Most of the code I write is in C#.
+Because classes are defined inside a namespace block they are indented by default so there is no extra action needed.
+The code can be copied as it is and it will be converted into HTML.</p>
+<p>This was one of the reasons why I selected Markdown as the language for my blog.</p>
+<h2>Version Control</h2>
+<p>I believe that the version control system plays very important role in every software project.
+Whenever I start something new and  I know that it stick around for longer than a day I create a repository.
+Blog definitely falls into this category.
+The decision about which VC system to use was quite easy.
+For all the private work I use Git.
+I've got all the tools installed and account on a GitHub to backup my repository.</p>
+<p>With a public repository there is theoretical a chance that somebody will send me a pull request to fix something in the post but I don't think this will happen.
+Not because the code I write is flawless but blog is a personal thing.
+Nevertheless, contributions are more than welcome.</p>
+<h2>Conclusions</h2>
+<p>In summary, I will write all my posts using Markdow syntax.
+They will under version control system and available in two different places.
+Sources will be saved in the GitHub and the HTML version will be published in the Blogger.</p>
