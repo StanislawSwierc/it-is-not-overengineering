@@ -1,4 +1,7 @@
-﻿module.exports = function (grunt) {
+﻿const url = require('url');
+const path = require('path');
+
+module.exports = function (grunt) {
     grunt.initConfig({
         markdownit: {
             all: {
@@ -18,39 +21,33 @@
                 options: {
                     highlightjs: true,
                     html: true,
+                    replaceLink: function (link, env) {
+                        var linkObj = url.parse(link);
+                        if (linkObj.protocol) {
+                            return link;
+                        } else {
+                            linkObj = url.parse(
+                                "http://stanislawswierc.github.io/it-is-not-overengineering/"
+                                + path.dirname(env.file.dest)
+                                + '/'
+                                + link.replace(/^\.?\//, ''))
+                            return linkObj.href;
+                        }
+                    },
                     plugins: {
                         'markdown-it-anchor': {
                             level: 1
-                        }
+                        },
+                        'markdown-it-replace-link': {},
+                        'markdown-it-attrs': {},
+                        'markdown-it-linkify-images': {}
                     }
                 }
-            }
-        },
-        inline: {
-            all: {
-                src: ['**/*.html', '!node_modules/**', '!html_inline/**'],
-                dest: 'html_inline/'
-            }
-        },
-        inlinecss: {
-            all: {
-                options: {
-                },
-                files: [
-                    {
-                        expand: true,
-                        src: ['**/*.html', '!node_modules/**', '!html/**'],
-                        dest: 'html_inline/'
-                    }
-                ],
             }
         }
     });
 
     grunt.loadNpmTasks('grunt-markdown-it');
-    grunt.loadNpmTasks('grunt-inline-css');
-    grunt.loadNpmTasks('grunt-inline');
 
-    grunt.registerTask('html_inline', ['markdownit:all', 'inline:all']);
     grunt.registerTask('html', ['markdownit:all']);
 };
