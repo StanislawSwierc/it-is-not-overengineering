@@ -1,4 +1,4 @@
-<h1>Creating index table in DAX</h1>
+<h1 id="creating-index-table-in-dax">Creating index table in DAX</h1>
 <p>Tags: <code>powerbi</code>, <code>dax</code></p>
 <p>Sometimes, when you create advanced calculations in DAX, you need to create an auxiliary index table which contains increasing number like in the example below.</p>
 <table>
@@ -22,7 +22,7 @@
 <p>There are several ways one can approach this problem.
 Marco Russo described some of them for the general case of creating static tables in his article <a href="https://www.sqlbi.com/articles/create-static-tables-in-dax-using-the-datatable-function">[1]</a>.
 Here I would like to present a different approach which works great for the more specific problem of index tables.</p>
-<h2>Problem statement</h2>
+<h2 id="problem-statement">Problem statement</h2>
 <p>Create a table with one column where rows are increasing from 1 to 5.</p>
 <table>
 <thead>
@@ -48,7 +48,7 @@ Here I would like to present a different approach which works great for the more
 </tr>
 </tbody>
 </table>
-<h2>Solution</h2>
+<h2 id="solution">Solution</h2>
 <p>In Power BI we can create such table with <em>Power Query</em> or directly in <em>DAX</em> using <a href="https://powerbi.microsoft.com/en-us/documentation/powerbi-desktop-calculated-tables/"><em>calculated tables</em></a>. In the first approach we would use <a href="https://msdn.microsoft.com/en-us/library/mt260934.aspx"><code>List.Numbers</code></a> function.
 Second, is more challenging as there is no such function in <em>DAX</em>.
 Luckily, there is <code>CALENDAR</code> function which can be used to generate a table!</p>
@@ -98,7 +98,7 @@ Luckily, there is <code>CALENDAR</code> function which can be used to generate a
         [Index] &gt; <span class="hljs-number">0</span>
     )
 </code></pre>
-<h2>References:</h2>
+<h2 id="references">References:</h2>
 <ol>
 <li><a href="https://www.sqlbi.com/articles/create-static-tables-in-dax-using-the-datatable-function">Create Static Tables in DAX Using the DATATABLE Function</a></li>
 <li><a href="https://msdn.microsoft.com/en-us/library/mt260934.aspx">Power Query M function reference - List.Numbers</a></li>

@@ -1,11 +1,11 @@
-<h1>3.6.2 Simple Linear Regression - loading data set</h1>
+<h1 id="362-simple-linear-regression-loading-data-set">3.6.2 Simple Linear Regression - loading data set</h1>
 <blockquote>
 <p>This laboratory was inspired by <a href="http://www-bcf.usc.edu/~gareth/ISL">An Introduction to Statistical Learning, with Applications in R</a> book, section 3.6.2 <em>Simple Linear Regression</em> at page 110.
 Please refer to it for for a detailed explanation of models and the nomenclature used in this post.</p>
 </blockquote>
 <p>In this laboratory we will use <a href="http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/Boston.html"><code>Boston</code></a> data set which comes with the <code>MASS</code> library.
 It contains some information about housing values in suburbs of Boston.</p>
-<h2>Loading data set in R</h2>
+<h2 id="loading-data-set-in-r">Loading data set in R</h2>
 <p>In order to load the data set in R we can use the following commands:</p>
 <!--?prettify?-->
 <pre><code>&gt;library(MASS)
@@ -42,7 +42,7 @@ It contains some information about housing values in suburbs of Boston.</p>
  3rd Qu.:16.95   3rd Qu.:25.00  
  Max.   :37.97   Max.   :50.00  
 </code></pre>
-<h2>Loading data set in Azure Machine Learning</h2>
+<h2 id="loading-data-set-in-azure-machine-learning">Loading data set in Azure Machine Learning</h2>
 <p>The <code>Boston</code> data set is not available in the predefined set of <code>Saved Datasets</code>.
 However, it can easily be loaded using <code>Execute R Script</code> available under <code>R Language Modules</code>.
 Drag this module to the experiment canvas and set the following script to be executed:</p>
@@ -68,7 +68,7 @@ maml.mapOutputPort(&quot;data.frame&quot;);
     <img border="0" src="http://3.bp.blogspot.com/-egTfMGtqMBg/U9cK3axUadI/AAAAAAAAAkE/_X-E9e0dboU/s400/visualization.png" />
   </a>
 </div>
-<h2>Using Descriptive Statistics module</h2>
+<h2 id="using-descriptive-statistics-module">Using Descriptive Statistics module</h2>
 <p>The default data set visualization in Azure does not show all the values that are printed by <code>summary</code> function in R.
 In particular first and third quartiles are missing.
 In order to get their values one can use <code>Descriptive Statistics</code> module.
@@ -81,9 +81,9 @@ Drag it to the experiment surface and connect it with the existing <code>Execute
     <img border="0" src="http://2.bp.blogspot.com/-4TVkU9Zp0Ko/U9cND37j4TI/AAAAAAAAAkY/B7dy4qRmIg8/s400/descriptivevisualization.png" />
   </a>
 </div>
-<h2>In the next part</h2>
+<h2 id="in-the-next-part">In the next part</h2>
 <p>In the next part we will look into selecting data for the one-dimensional regression.</p>
-<h2>References</h2>
+<h2 id="references">References</h2>
 <ul>
 <li><a href="http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/Boston.html">Housing Values in Suburbs of Boston</a></li>
 <li><a href="http://azure.microsoft.com/en-us/services/machine-learning">Microsoft Azure Machine Learning</a> (<a href="http://azure.microsoft.com/en-us/trial/get-started-machine-learning">Trial</a>)</li>

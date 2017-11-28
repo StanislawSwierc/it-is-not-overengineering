@@ -1,4 +1,4 @@
-<h1>Syntax highlighting with Markdown and Prettify</h1>
+<h1 id="syntax-highlighting-with-markdown-and-prettify">Syntax highlighting with Markdown and Prettify</h1>
 <p>In my <a href="./../../2013/06/syntax-highlighting-with-tex4ht.html">last</a> post I described how TeX4ht can be used to do syntax highlighting of source code for a web publishing.
 Today I will tell you something about the solution I chose for my blog.
 In order to keep the text of my posts and the related code in a single place I am using <a href="http://daringfireball.net/projects/markdown/">Markdown</a>.</p>
@@ -15,19 +15,19 @@ It looks nice but colors would definitely improve the readability.</p>
     }
 }
 </code></pre>
-<h2>Google Code Prettify</h2>
+<h2 id="google-code-prettify">Google Code Prettify</h2>
 <p><a href="http://code.google.com/p/google-code-prettify/">Google Code Prettify</a> is the project which can help us achieve just that.
 This is a Javascript library which when loaded, rewrites existing code sections and improves their style.
 One of the best features is that there is no need to explicitly specify the language as it can be automatically detected.
 If the snippet is too short for the detection to work you may specify it explicitly but most of the time it just works.</p>
-<h3>Load Prettify</h3>
+<h3 id="load-prettify">Load Prettify</h3>
 <p>In order to turn on Prettify on a site it is necessary to reference the script.
 It will load the CSS, Javascript modules and look for the marked code sections to fix.</p>
 <!--?prettify?-->
 <pre><code>&lt;script src=&quot;https://google-code-prettify.googlecode.com/svn/loader/
     run_prettify.js&quot;&gt;&lt;/script&gt; 
 </code></pre>
-<h3>Mark code sections</h3>
+<h3 id="mark-code-sections">Mark code sections</h3>
 <p>Prettify will only touch code sections which were marked.
 Two different markers are supported.</p>
 <p>In the normal HTML it is best to add a <code>prettyprint</code> class to the <code>&lt;pre&gt;</code>, <code>&lt;code&gt;</code> or <code>&lt;xmp&gt;</code> elements:</p>
@@ -44,7 +44,7 @@ The code needs to be preceded with a special instruction:</p>
 source code here
 &lt;/pre&gt;
 </code></pre>
-<h2>Markdown and Prettify</h2>
+<h2 id="markdown-and-prettify">Markdown and Prettify</h2>
 <p>According to the documentation, in order to add block-level HTML elements in Markdown they have to be surrounded with blank lines and they should not be indented with tabs or spaces.
 Knowing that one could try to enable prettify with the following markup.</p>
 <!--?prettify?-->
@@ -72,7 +72,7 @@ This is a huge deal, especially for Markdown because comments are supported!</p>
     // like &lt;!--?foo?--&gt;, but in XML is a processing instruction
     var value = (nt === 7 || nt === 8) &amp;&amp; preceder.nodeValue;
 </code></pre>
-<h2>Conclusions</h2>
+<h2 id="conclusions">Conclusions</h2>
 <p>In order to mark a Markdown code block to be processed by a Prettify one can add <code>&lt;!--?prettify?--&gt;</code> element before the block.
 Of course there needs to be a single empty line for everything to work.</p>
 <p>The following markup:</p>
@@ -104,7 +104,7 @@ Of course there needs to be a single empty line for everything to work.</p>
 </code></pre>
 <p>Although this solution relies on some undocumented features I think that it is a reliable one.
 I will use it to write my blog.</p>
-<h2>References</h2>
+<h2 id="references">References</h2>
 <ul>
 <li><a href="http://daringfireball.net/projects/markdown/">Markdown</a></li>
 <li><a href="http://code.google.com/p/google-code-prettify/">Google Code Prettify</a></li>

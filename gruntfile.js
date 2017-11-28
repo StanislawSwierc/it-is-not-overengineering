@@ -17,7 +17,12 @@
                 ],
                 options: {
                     highlightjs: true,
-                    html: true
+                    html: true,
+                    plugins: {
+                        'markdown-it-anchor': {
+                            level: 1
+                        }
+                    }
                 }
             }
         },

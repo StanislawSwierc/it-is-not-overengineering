@@ -1,4 +1,4 @@
-<h1>Blog development plan</h1>
+<h1 id="blog-development-plan">Blog development plan</h1>
 <p>I'm quite a new to blogging but I know a lot about the software development.
 Are these two activities that different?
 They look alike to me:</p>
@@ -9,7 +9,7 @@ They look alike to me:</p>
 </ul>
 <p>Hey, that's exactly what software developers do all the time!</p>
 <p>Let's have a look at how this idea can be put in use.</p>
-<h2>Syntax</h2>
+<h2 id="syntax">Syntax</h2>
 <p>One of the most important decision is about the syntax used to write posts.
 Ideally the syntax should be very light so that the writer focuses on the content.
 Additionally it should have some capabilities to organize the document.</p>
@@ -19,7 +19,7 @@ Additionally it should have some capabilities to organize the document.</p>
 <li>LaTeX + Tex4ht</li>
 <li>Markdown</li>
 </ul>
-<h3>HTML</h3>
+<h3 id="html">HTML</h3>
 <p>I know that my posts will need to be converted to HTML at some point in time so why not just start with it.
 This language has a great tooling with <em>WYSWIG</em> editors.
 Moreover, it is the most powerful option.
@@ -30,7 +30,7 @@ The problem is even worse because in HTML there are two characters that demand s
 Left angle brackets are used to start tags whereas ampersands are used to denote HTML entities.
 In order to use them as literal characters, it is necessary to escape them as entities, e.g. <code>&amp;lt;</code>, and <code>&amp;amp;</code>.
 Even if they are inserted by an editor they will exist in the source, thus making it harder to read.</p>
-<h3>LaTeX + Tex4ht</h3>
+<h3 id="latex-tex4ht">LaTeX + Tex4ht</h3>
 <p>An alternative solution, which should be attractive to all academics, is the LaTeX.
 With some tools like HTLaTeX it is possible to compile documents to HTML.</p>
 <p>I studied at a university where using LaTeX it is not mandatory but most of the instructors preferred this format.
@@ -70,7 +70,7 @@ I still had to compile the document few times and inspect the html to capture al
 Eventually I came up with a nicely colored source code listing.</p>
 <p>In summary, the experience wasn't bad but I had a feeling that I had to search for solutions and workarounds too often.
 I decided to look for something different.</p>
-<h3>Markdown</h3>
+<h3 id="markdown">Markdown</h3>
 <p>The third option that I took into consideration is <em>Markdown</em>.
 Initially I've been using it at <em>StackExchange</em> without knowing its name.
 I would just write a question or an answer and discover the syntax accidentally by typing and looking at the 'Preview' section.
@@ -89,7 +89,7 @@ No tags, no commands, just indentation - perfect!</p>
 Because classes are defined inside a namespace block they are indented by default so there is no extra action needed.
 The code can be copied as it is and it will be converted into HTML.</p>
 <p>This was one of the reasons why I selected Markdown as the language for my blog.</p>
-<h2>Version Control</h2>
+<h2 id="version-control">Version Control</h2>
 <p>I believe that the version control system plays very important role in every software project.
 Whenever I start something new and  I know that it stick around for longer than a day I create a repository.
 Blog definitely falls into this category.
@@ -99,7 +99,7 @@ I've got all the tools installed and account on a GitHub to backup my repository
 <p>With a public repository there is theoretical a chance that somebody will send me a pull request to fix something in the post but I don't think this will happen.
 Not because the code I write is flawless but blog is a personal thing.
 Nevertheless, contributions are more than welcome.</p>
-<h2>Conclusions</h2>
+<h2 id="conclusions">Conclusions</h2>
 <p>In summary, I will write all my posts using Markdow syntax.
 They will under version control system and available in two different places.
 Sources will be saved in the GitHub and the HTML version will be published in the Blogger.</p>

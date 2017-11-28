@@ -1,11 +1,11 @@
-<h1>3.6.2 Simple Linear Regression - running prediction</h1>
+<h1 id="362-simple-linear-regression-running-prediction">3.6.2 Simple Linear Regression - running prediction</h1>
 <blockquote>
 <p>This laboratory was inspired by <a href="http://www-bcf.usc.edu/~gareth/ISL">An Introduction to Statistical Learning, with Applications in R</a> book, section 3.6.2 <em>Simple Linear Regression</em> at page 110.
 Please refer to this resource for a detailed explanation of models and the nomenclature used in this post.</p>
 </blockquote>
 <p>In the previous post we've seen how to train a linear regression model.
 This post explains how to use the model to make predictions on the new data.</p>
-<h2>Running prediction in R</h2>
+<h2 id="running-prediction-in-r">Running prediction in R</h2>
 <p>Once we have trained model we can use <code>predict</code> function to produce a prediction.</p>
 <pre><code>&gt; predict(lm.fit, data.frame(lstat = c(5, 10, 15)))
 
@@ -23,7 +23,7 @@ This post explains how to use the model to make predictions on the new data.</p>
 3 20.30310  8.077742 32.52846
 </code></pre>
 <p>From this results we can read that for example, the predicted value of the <code>medv</code> for the <code>lstat</code> of 10 is 25.05335 and its 95% prediction interval is (12.827626, 37.27907).</p>
-<h2>Running prediction in Azure Machine Learning</h2>
+<h2 id="running-prediction-in-azure-machine-learning">Running prediction in Azure Machine Learning</h2>
 <p>The process of running prediction in Azure is slightly different because it is optimized for the web.
 Instead of calling a function locally we will publish the trained model as an Azure Web Service.</p>
 <p>At first it may seem ridiculous to call a web service to run prediction on such a simple model, but on the second thought, it is actually great.
@@ -141,16 +141,16 @@ OK
 <p>The last line is the most interesting bit.
 It tells us that for <code>lstat</code> value 10 the model prediction value is 25.0533473418032.
 As expected, this value is precisely what we received when we run the model inside R.</p>
-<h2>Summary</h2>
+<h2 id="summary">Summary</h2>
 <ul>
 <li>In this laboratory we saw how to run the prediction both in R and in Azure Machine Learning Studio.</li>
 <li>Both models returned the same value.</li>
 <li>When working in R it was very easy to get some statistical information about the prediction such as the 95% intervals.</li>
 <li>By publishing our experiment we created a fully operational Web Service hosted in Azure.</li>
 </ul>
-<h2>In the next part</h2>
+<h2 id="in-the-next-part">In the next part</h2>
 <p>In the next part we will expand the feature space and training a multiple linear regression model.</p>
-<h2>References</h2>
+<h2 id="references">References</h2>
 <ul>
 <li>
 <p><a href="http://azure.microsoft.com/en-us/documentation/articles/machine-learning-overview-of-azure-ml-process#publishing-an-azure-ml-web-service">Publishing an Azure ML Web Service</a></p>

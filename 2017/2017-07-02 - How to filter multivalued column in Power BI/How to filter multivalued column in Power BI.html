@@ -1,9 +1,9 @@
-<h1>How to filter multivalued column in Power BI</h1>
+<h1 id="how-to-filter-multivalued-column-in-power-bi">How to filter multivalued column in Power BI</h1>
 <p>Tags: <code>Power BI</code>, <code>DAX</code></p>
 <p>Recently someone asked me what is the best way to filter on a multi-valued columns in Power BI.
 The question was in the context of <code>Tags</code> property of the <code>Work Items - Today</code> table in the Visual Studio Team Services <a href="https://www.visualstudio.com/en-us/docs/report/powerbi/data-connector-available-data">[1]</a>.
 Although the original question was very specific, the solution I came up with can be generalized to multivalued columns in any data model.</p>
-<h2>What is a multivalued column?</h2>
+<h2 id="what-is-a-multivalued-column">What is a multivalued column?</h2>
 <p>Multivalued column is a database design pattern where instead of normalizing and splitting data across multiple tables you keep multiple values in a single table.
 You can see it typically in the data warehouses where normalization would lead to a too granular fact tables.
 One of the best examples is the <code>Categories</code> column in the <code>Product</code> table where want to allow users to select multiple values, but you don't want to create a separate <code>Categories</code> table.</p>
@@ -40,7 +40,7 @@ It contains <code>Tags</code> column which is a <code>&quot;; &quot;</code> deli
 </tr>
 </tbody>
 </table>
-<h2>Problem statement</h2>
+<h2 id="problem-statement">Problem statement</h2>
 <p>Given table with a multivalued column prepare data model that will allow users to easily filter on distinct values.</p>
 <p>For example, we can start with the table below, which has multivalued <code>Tags</code> column.</p>
 <pre><code class="language-pq">let
@@ -61,7 +61,7 @@ That's <strong>not</strong> what we want.</p>
 <div class="separator" style="clear: both; text-align: center;"><a href="https://4.bp.blogspot.com/-j7eXtBxxjEE/WVlGMhp4IOI/AAAAAAABIY8/g2C-7qeC1wQ9UYLsPDrGkDMYgejaTLUmwCLcBGAs/s1600/exaple_badfilter.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://4.bp.blogspot.com/-j7eXtBxxjEE/WVlGMhp4IOI/AAAAAAABIY8/g2C-7qeC1wQ9UYLsPDrGkDMYgejaTLUmwCLcBGAs/s1600/exaple_badfilter.png" data-original-width="335" data-original-height="151" /></a></div>
 <p>A much better design is to extract distinct values from the <code>Tags</code> column so that we can build the following slicer.</p>
 <div class="separator" style="clear: both; text-align: center;"><a href="https://3.bp.blogspot.com/-8nfx_OGSdCI/WVlGMUQg3LI/AAAAAAABIY0/r6L71Nz3QjsGkwSLro6VZNJ9r7bTohc7gCLcBGAs/s1600/exaple_filter.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://3.bp.blogspot.com/-8nfx_OGSdCI/WVlGMUQg3LI/AAAAAAABIY0/r6L71Nz3QjsGkwSLro6VZNJ9r7bTohc7gCLcBGAs/s1600/exaple_filter.png" data-original-width="335" data-original-height="157" /></a></div>
-<h2>Solution</h2>
+<h2 id="solution">Solution</h2>
 <p>The solution I would like to show you is based on the post by <a href="http://sqljason.com/author/sql_jason">SQLJason</a> where he talks about handling delimited rows <a href="http://sqljason.com/2013/06/split-delimited-row-into-multiple-rows.html">[2]</a>.
 I modernized and improved it a little to cover columns of arbitrary length and to avoid contaminating model with auxiliary tables.
 The idea stays the same and can be broken down into the following steps.</p>
@@ -216,7 +216,7 @@ That is exactly opposite of what we need.</p>
 <p>Double-click on the relationship to open the advanced editor and under <em>&quot;Cross filter direction&quot;</em> select <em>&quot;Both&quot;</em>.</p>
 <div class="separator" style="clear: both; text-align: center;"><a href="https://2.bp.blogspot.com/-6udSv6BuSAg/WVlGNB9XYyI/AAAAAAABIZE/JKnf1u2S-akBCBjVr2XBcB2QRcoShJjLwCPcBGAYYCw/s1600/relationships_advanced.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://2.bp.blogspot.com/-6udSv6BuSAg/WVlGNB9XYyI/AAAAAAABIZE/JKnf1u2S-akBCBjVr2XBcB2QRcoShJjLwCPcBGAYYCw/s640/relationships_advanced.png" width="640" height="547" data-original-width="716" data-original-height="612" /></a></div>
 <p>Finally, create a new slicer with <code>Tag</code> field from the newly created <code>Tags</code> table to get the best filtering experience! You can also try out amazing <a href="https://store.office.com/en-us/app.aspx?assetid=WA104380859&amp;sourcecorrid=7807eed6-5653-43d3-abb5-8c38f68aa677&amp;searchapppos=18&amp;ui=en-US&amp;rs=en-US&amp;ad=US&amp;appredirect=false">Smart Filter</a> custom visual, which fits perfectly for this scenario.</p>
-<h2>References:</h2>
+<h2 id="references">References:</h2>
 <ol>
 <li><a href="https://www.visualstudio.com/en-us/docs/report/powerbi/data-connector-available-data">Team Services &amp; TFS - Available data tables in the Power BI Data Connector for Team Services</a></li>
 <li><a href="http://sqljason.com/2013/06/split-delimited-row-into-multiple-rows.html">Split a Delimited Row into Multiple Rows using DAX Queries</a></li>

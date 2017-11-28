@@ -1,4 +1,4 @@
-<h1>How to migrate VSTS reports from Excel to Power BI?</h1>
+<h1 id="how-to-migrate-vsts-reports-from-excel-to-power-bi">How to migrate VSTS reports from Excel to Power BI?</h1>
 <blockquote>
 <p>Tags: <code>Power BI</code>, <code>Power Query</code>, <code>VSTS</code></p>
 </blockquote>
@@ -25,9 +25,9 @@ When you modify your Query by adding extra filters or columns these changes will
 It is possible because it was build on top of <em>Power Query</em> functions, which are part of Visual Studio Team Services Power BI Data Connector <a href="https://www.visualstudio.com/en-us/docs/report/powerbi/data-connector-functions#vstscontents">[3]</a>.
 These functions are available in the Service and in the Desktop since January 9 2017.
 Let's see how we can use it in our scenario.</p>
-<h2>Problem statement</h2>
+<h2 id="problem-statement">Problem statement</h2>
 <p>Given existing report build on top of <a href="https://marketplace.visualstudio.com/items?itemName=blueprint.vsts-open-work-items-in-excel">VSTS Open in Excel</a> extension, migrate it to <a href="https://marketplace.visualstudio.com/items?itemName=stansw.vsts-open-in-powerbi">Open in Power BI</a>, publish dataset to Power BI Service and configure refresh.</p>
-<h2>Solution</h2>
+<h2 id="solution">Solution</h2>
 <p>First let's look into how one could build a reporting pipeline on top of <a href="https://marketplace.visualstudio.com/items?itemName=blueprint.vsts-open-work-items-in-excel">VSTS Open in Excel</a> extension.
 As always, it all starts with a WIQL query.
 This time it is <em>&quot;Flat&quot;</em> query, which is a flat table of work items (I like to be creative with names).</p>
@@ -36,7 +36,7 @@ This time it is <em>&quot;Flat&quot;</em> query, which is a flat table of work i
     <img border="0" src="img/wiql.png" width="640" height="286" />
   </a>
 </div>
-<h3>Create reports based on &quot;VSTS Open in Excel&quot; extension</h3>
+<h3 id="create-reports-based-on-vsts-open-in-excel-extension">Create reports based on &quot;VSTS Open in Excel&quot; extension</h3>
 <p>I can click &quot;Open in Excel&quot; button and the query result will appear in Excel.
 Please notice that columns have the right names and type - neat!</p>
 <div class="separator" style="clear: both; text-align: center;"><a href="https://2.bp.blogspot.com/-_trLwUdVvnU/WXQ-YQza85I/AAAAAAABI5w/Tanl_nEJi1AsoSu4DTH-46QniQyUxpIjACPcBGAYYCw/s1600/excel.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://2.bp.blogspot.com/-_trLwUdVvnU/WXQ-YQza85I/AAAAAAABI5w/Tanl_nEJi1AsoSu4DTH-46QniQyUxpIjACPcBGAYYCw/s640/excel.png" width="640" height="410" data-original-width="696" data-original-height="446" /></a></div>
@@ -91,7 +91,7 @@ Finally, refresh will only <strong>fetch data that is already present in the spr
 This means that unless you manually open <em>Excel</em> file and press <em>Refresh</em> button in the <em>Team</em> toolbar, you will end up with the stale data.</p>
 <div class="separator" style="clear: both; text-align: center;"><a href="https://1.bp.blogspot.com/-I9rZAJhtr9w/WXQ-YMdrHgI/AAAAAAABI48/kDy0eIiHTE4gzARhRGXW7pHsx3-1VlFAQCLcBGAs/s1600/excel-refresh-button.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://1.bp.blogspot.com/-I9rZAJhtr9w/WXQ-YMdrHgI/AAAAAAABI48/kDy0eIiHTE4gzARhRGXW7pHsx3-1VlFAQCLcBGAs/s1600/excel-refresh-button.png" data-original-width="529" data-original-height="374" /></a></div>
 <p>There are some workarounds such a saving workbook to <em>SharePoint</em> and scripting refresh operation, but they are more complicated than what an average user could set up.</p>
-<h3>Create reports based on &quot;Open in Power BI&quot; extension</h3>
+<h3 id="create-reports-based-on-open-in-power-bi-extension">Create reports based on &quot;Open in Power BI&quot; extension</h3>
 <p>Right now we should have a pretty good understanding of how one can use <em>Excel</em> to build reports in <em>Power BI</em>.
 Let's see how to achieve similar result with <em>Open in Power BI</em> extension.</p>
 <p>Just as before I start with the query result page where I can find <em>Open in Power BI</em> button.
@@ -134,11 +134,11 @@ Because <em>Open in Power BI</em> extension is built on top of functions from th
 <a href="https://www.visualstudio.com/en-us/docs/report/powerbi/data-connector-functions#vstscontents">[3]</a>.</p>
 <div class="separator" style="clear: both; text-align: center;"><a href="https://1.bp.blogspot.com/-aq9CY5qtmS0/WXQ-Y1EmUGI/AAAAAAABI5Y/cZbdwZqKBtU1KY6tM0TRFp8KQSFxS65aACLcBGAs/s1600/powerbi-refresh-settings.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" src="https://1.bp.blogspot.com/-aq9CY5qtmS0/WXQ-Y1EmUGI/AAAAAAABI5Y/cZbdwZqKBtU1KY6tM0TRFp8KQSFxS65aACLcBGAs/s1600/powerbi-refresh-settings.png" data-original-width="617" data-original-height="538" /></a></div>
 <p>Finally I can expand <em>Scheduled refresh</em> section and define how often I want my dataset to be refreshed.</p>
-<h2>Conclusions</h2>
+<h2 id="conclusions">Conclusions</h2>
 <p><em>Open in Power BI</em> extension was created with <em>Power BI</em> scenarios in mind, thus, it is much easier to use than building pipeline with <em>VSTS Open in Excel</em>.
 At the end of the day both solutions give me a table so any customization I create in <em>Power Query</em> for one solution, I will be able to easily move to another.
 The strongest advantage of <em>Open in Power BI</em> approach is that it works strainght away in <em>Power BI Service</em> without the gateway.</p>
-<h2>References:</h2>
+<h2 id="references">References:</h2>
 <ol>
 <li><a href="https://marketplace.visualstudio.com/items?itemName=blueprint.vsts-open-work-items-in-excel">Visual Studio Team Services Marketplace - VSTS Open in Excel</a></li>
 <li><a href="https://marketplace.visualstudio.com/items?itemName=stansw.vsts-open-in-powerbi">Visual Studio Team Services Marketplace - Open in Power BI</a></li>
