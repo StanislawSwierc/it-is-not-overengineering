@@ -1,0 +1,38 @@
+<h1 id="how-to-create-dynamic-odata-query-in-power-bi">How to create dynamic OData query in Power BI?</h1>
+<p>Power BI allows you to import data from any service that exposes OData endpoint. You can either select &quot;<em>OData feed</em>&quot; in the &quot;Get Data&quot; window or go directly to <em>Power Query</em> editor and use <a href="https://msdn.microsoft.com/en-us/library/mt260868.aspx"><code>OData.Feed</code></a> function. Although documentation doesn't explain it clearly this function can operate in two different modes. You can pass either URL to the feed or complete OData query. The latter option is particularly interesting as it allows us to build dynamic queries, however, there is a price!</p>
+<p>Let's start with a simple example that loads work items from Visual Studio Team Services using recently announced OData endpoint [<a href="https://blogs.msdn.microsoft.com/devops/2017/11/22/vsts-analytics-odata-now-publicly-available/">2</a>]. In the example I load all the work items that have been created in the last 7 days. Please notice that I use <code>DateTimeZone.UtcNow</code> function to get current date, subtract 7 days and convert it to the <em>ISO 8601</em> format.</p>
+<pre><code class="language-pq">let
+    since = DateTimeZone.UtcNow() - #duration(7, 0, 0, 0),
+    Source = OData.Feed(&quot;https://stansw.analytics.visualstudio.com/_odata/WorkItems?&quot; 
+        &amp; &quot;$filter=CreatedDate lt &quot; &amp; DateTimeZone.ToText(since, &quot;yyyy-MM-ddThh:mm:ssZ&quot;)
+        &amp; &quot;&amp;$select=WorkItemId, Title&quot;),
+    #&quot;Removed Other Columns&quot; = Table.SelectColumns(Source,{&quot;WorkItemId&quot;, &quot;Title&quot;})
+in
+    #&quot;Removed Other Columns&quot;
+</code></pre>
+<p>This code will work great in Power BI Desktop, but when you publish it, you won't be able to schedule refresh, which defeats the purpose of publishing. Why would you share stale data?</p>
+<p><a href="http://stanislawswierc.github.io/it-is-not-overengineering/2017/2017-12-07%20-%20How%20to%20create%20dynamic%20OData%20query%20in%20Power%20BI/refresh_error.png" target="_self"><img src="http://stanislawswierc.github.io/it-is-not-overengineering/2017/2017-12-07%20-%20How%20to%20create%20dynamic%20OData%20query%20in%20Power%20BI/refresh_error.png" alt=""></a></p>
+<p>The problem is with string concatenation. Power BI refuses to detect host for dynamic URL, thus, it cannot figure out which credentials should be applied to the dataset.</p>
+<p>In order to fix it we need to switch to the other mode and use feed. This might not work for an arbitrarily complex OData query, but it should be sufficient for the majority of real-world queries.</p>
+<p>This solution boils down to starting with feed and relying on Power Query feature called &quot;<em>folding</em>&quot; to translate function calls to the operations natively supported by the data source. In our case we are interested in functions <code>Table.SelectRows</code> and <code>Table.SelectColumns</code> which can be <em>folded</em>. Please notice that not every function can be folded! A good example is <code>DateTimeZone.UtcNow</code> which has to be called upfront and only its result can be passed to the filtering expression.</p>
+<pre><code class="language-pq">let
+    since = DateTimeZone.UtcNow() - #duration(7, 0, 0, 0),
+    Source = OData.Feed(&quot;https://stansw.analytics.visualstudio.com/_odata&quot;),
+    WorkItems_table = Source{[Name=&quot;WorkItems&quot;, Signature=&quot;table&quot;]}[Data],
+    #&quot;Filter Rows&quot; = Table.SelectRows(WorkItems_table, each [CreatedDate] &lt; since),
+    #&quot;Select Columns&quot; = Table.SelectColumns(#&quot;Filter Rows&quot;,{&quot;WorkItemId&quot;, &quot;Title&quot;})
+in
+    #&quot;Select Columns&quot;
+</code></pre>
+<p>During execution, this code will be translated to the following OData query, which is exactly what we wanted.</p>
+<pre class="hljs"><code class="language-odata"><span class="hljs-title">https://stansw.analytics.visualstudio.com/_odata/WorkItems</span>?
+  <span class="hljs-keyword">$filter</span>=<span class="hljs-symbol">CreatedDate</span> lt <span class="hljs-literal">2017-12-01T15:54:56.8747859Z</span>
+  &amp;<span class="hljs-keyword">$select</span>=<span class="hljs-symbol">WorkItemId</span>,<span class="hljs-symbol">Title</span>
+</code></pre>
+<p>I showed how to apply this solution to Visual Studio Team Services feed. It is, however, general and will for your feeds as well.</p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="https://msdn.microsoft.com/en-us/library/mt260868.aspx">Power Query M function reference - OData.Feed</a></li>
+<li><a href="https://blogs.msdn.microsoft.com/devops/2017/11/22/vsts-analytics-odata-now-publicly-available/">VSTS Analytics OData now publicly available</a></li>
+<li><a href="https://www.iso.org/iso-8601-date-and-time-format.html">Date and time format - ISO 8601</a></li>
+</ol>
