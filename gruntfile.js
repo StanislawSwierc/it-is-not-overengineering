@@ -21,6 +21,7 @@ module.exports = function (grunt) {
                 options: {
                     highlightjs: true,
                     html: true,
+                    linkify: true,
                     replaceLink: function (link, env) {
                         var linkObj = url.parse(link);
                         if (linkObj.protocol) {
