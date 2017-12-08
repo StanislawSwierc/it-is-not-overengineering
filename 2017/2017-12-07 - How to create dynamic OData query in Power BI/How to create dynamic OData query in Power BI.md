@@ -43,6 +43,10 @@ https://stansw.analytics.visualstudio.com/_odata/WorkItems?
   &$select=WorkItemId,Title
 ```
 
+If you publish the dataset to Power BI, the data source will be correctly detected and after you specify credentials you will be able to refresh the data and define a schedule.
+
+![](refresh_success.png)
+
 I showed how to apply this solution to Visual Studio Team Services feed. It is, however, general and will for your feeds as well.
 
 ## References
