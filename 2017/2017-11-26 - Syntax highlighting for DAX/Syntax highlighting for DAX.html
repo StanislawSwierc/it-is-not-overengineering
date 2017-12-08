@@ -1,0 +1,23 @@
+<h1 id="syntax-highlighting-for-dax">Syntax highlighting for DAX</h1>
+<p>I'm not sure if you noticed it, but one of my previous posts had code snippet in DAX and apart from being nicely formatted with <a href="http://www.daxformatter.com/">Dax Formatter</a> the syntax was highlighed as well. In order to create that snippet I added DAX support to the amazing library <a href="https://highlightjs.org/">highlight.js</a> I use to build my blog.</p>
+<p>With this contribution you can format your DAX code as well.</p>
+<pre class="hljs"><code class="language-dax">MaxLength =
+<span class="hljs-keyword">VAR</span> Separator = <span class="hljs-string">"; "</span>
+<span class="hljs-keyword">RETURN</span>
+    <span class="hljs-built_in">MAXX</span> (
+        'Work Items - Today',
+        <span class="hljs-number">1</span> + <span class="hljs-built_in">LEN</span> ( [Tags] )
+            - <span class="hljs-built_in">LEN</span> ( <span class="hljs-built_in">SUBSTITUTE</span> ( [Tags], Separator, <span class="hljs-string">""</span> ) )
+    )
+</code></pre>
+<p>The pull request to the main project is still pending so you might need to cherry-pick my commit and build it.</p>
+<p><a href="https://github.com/isagalaev/highlight.js/pull/1560">https://github.com/isagalaev/highlight.js/pull/1560</a></p>
+<p>Apart from adding it to the main project, I've also contributed it to the fork which is used by Microsoft in their documentation pipeline. Using this fork is another option you have to enable this feature in your websites.</p>
+<p><a href="https://github.com/DuncanmaMSFT/highlight.js">https://github.com/DuncanmaMSFT/highlight.js</a></p>
+<p>Hopefully all pull request will be completed soon and everyone will be able to use it by default.</p>
+<h2 id="references">References:</h2>
+<ol>
+<li><a href="http://www.itisnotoverengineering.com/2017/07/how-to-filter-multivalued-column-in.html">It is not overengineering! - How to filter multivalued column in Power BI?</a></li>
+<li><a href="http://www.daxformatter.com/">DAX Formatter</a></li>
+<li><a href="https://highlightjs.org/">highlight.js</a></li>
+</ol>
