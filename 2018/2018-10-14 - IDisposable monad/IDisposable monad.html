@@ -1,0 +1,311 @@
+<h1 id="idisposable-monad-iusablet-part-1">IDisposable monad (IUsable&lt;T&gt;) - part 1</h1>
+<p>Tags: <code>Functional programming</code>, <code>C#</code></p>
+<h2 id="introduction">Introduction</h2>
+<p>I've always said that C# is my favorite functional programming language. It is not a functional-first language so you have to be careful, but results are worth it as the FP code tends to be clearer and more maintainable. Recently, I discovered that there was a new book published on the topic of FP in C# - &quot;<em>Functional Programming in C#: How to write better C# code</em>&quot; by Enrico Buonanno. I learned about it from a newsletter listing recommended books on Safari Books Online. This was in fact a great recommendation!</p>
+<p><a href="https://www.amazon.com/Functional-Programming-write-better-code/dp/1617293954"><a href="http://stanislawswierc.github.io/it-is-not-overengineering/2018/2018-10-14%20-%20IDisposable%20monad/cover.jpg" target="_self"><img src="http://stanislawswierc.github.io/it-is-not-overengineering/2018/2018-10-14%20-%20IDisposable%20monad/cover.jpg" alt="Functional Programming in C#: How to write better C# code"></a></a></p>
+<p>I would recommend this book to everyone who writes software in C#. Even if it doesn't turn you into a FP enthusiast it will definitely change the way you think about certain problems and make you a better C# programmer. It is full of examples, patterns and references to complete source code hosted on GitHub.</p>
+<p>The chapter I enjoyed the most was &quot;<em>Chapter 11. Lazy computations, continuations, and the beauty of monadic composition</em>&quot;. I first learned about how to use monads in C# from an <a href="https://ericlippert.com/category/monads/page/1/">amazing, 13-part series of blogs by Eric Lippert</a>. Enrico in his book offered slightly different approach. Instead of focusing on the theory, he prepared many examples that guide the reader though a series of problems and solutions to finally land on a beautifully composed program. One of these examples was <code>Middleware&lt;T&gt;</code> monad, which is similar to continuation, but adds behaviors both before and after a given function. This was new pattern to me and very intriguing!</p>
+<p>Requirement to define behavior before and after some operation is very common. Every time you work with resources that have to be released (e.g. streams) you need to write the setup and teardown code. <code>Middleware&lt;T&gt;</code> delegate is defined as a higher order function which accepts a function to act on the resource/state (this pattern was first introduced in the book in section 1.5.1. &quot;<em>Encapsulating setup and teardown into a HOF</em>&quot;). When working with <code>Middleware&lt;T&gt;</code> callers specify only the function they want to apply to the resource, but they have no control over how the resource is created nor how it is released. This is very powerful pattern because you cannot get it wrong. No matter what you do, teardown code will be executed.</p>
+<p>Another great thing about <code>Middleware&lt;T&gt;</code> is the fact that you can compose them to form data pipelines. For example you could combine &quot;stopwatch&quot; middleware with &quot;open database connection&quot; middleware and &quot;open transaction scope&quot; middleware to define pipeline for working with databases in your application. I recommend reading the book for other great examples.</p>
+<h2 id="problem-statement">Problem statement</h2>
+<p>In the book <code>Middleware&lt;T&gt;</code> was defined as the following <a href="https://github.com/la-yumba/functional-csharp-code/blob/master/Examples/Chapter11/Middleware/Middleware.cs#L10">delegate with a set of extension methods</a>.</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">public</span> <span class="hljs-keyword">delegate</span> <span class="hljs-keyword">dynamic</span> Middleware&lt;T&gt;(Func&lt;T, <span class="hljs-keyword">dynamic</span>&gt; cont);
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Middleware</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> T Run&lt;T&gt;(<span class="hljs-keyword">this</span> Middleware&lt;T&gt; mw) =&gt; mw(t =&gt; t);
+
+    <span class="hljs-comment">// [...]</span>
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Middleware&lt;RR&gt; SelectMany&lt;T, R, RR&gt;
+        (<span class="hljs-keyword">this</span> Middleware&lt;T&gt; @<span class="hljs-keyword">this</span>, Func&lt;T, Middleware&lt;R&gt;&gt; f, Func&lt;T, R, RR&gt; project)
+        =&gt; cont =&gt; @<span class="hljs-keyword">this</span>(t =&gt; f(t)(r =&gt; cont(project(t, r))));
+}
+</code></pre>
+<p>There is one important element in this definition worth discussing in detail - <code>Middleware&lt;T&gt;</code> accepts and returns <code>dynamic</code>! Why is it a big deal? Remember when I praised this pattern for making sure you cannot get it wrong? While it still guarantees that teardown code executes, with <code>dynamic</code> there are other traps you may fall into. Author also identified this as a problem:</p>
+<blockquote>
+<p>The problem is that <code>T</code> (the input to the continuation) and R (its output) are not known at the same time. For example, suppose you want to create a <code>Middleware</code> instance from a function such as <code>Connect</code>, which has signature</p>
+<p><code>public static R Connect&lt;R&gt;(ConnectionString connString, Func&lt;SqlConnection, R&gt; func)</code></p>
+<p>The continuation accepted by Connect takes a <code>SqlConnection</code> as input, so we can use Connect to define a <code>Middleware&lt;SqlConnection&gt;</code>. That means the <code>T</code> type variable in <code>Middleware&lt;T&gt;</code> resolves to <code>SqlConnection</code>, but we don't yet know what the given continuation will yield, so we can't yet resolve the <code>R</code> type variable in <code>Connect&lt;R&gt;</code>.</p>
+<p><strong>Unfortunately, C# doesn't allow us to &quot;partially apply&quot; type variables; hence, dynamic. So although conceptually we're thinking of combining HOFs of this type</strong></p>
+<p><code>(T → R) → R</code></p>
+<p>we’re modeling them as follows:</p>
+<p><code>(T → dynamic) → dynamic</code></p>
+<p>Later you'll see that you can still work with Middleware without compromising on type safety.</p>
+<p><em>~Functional Programming in C#: How to write better C# code</em></p>
+</blockquote>
+<p>After I read this section it stayed in my head for long. Although Enrico explained how to alleviate this problem with <code>Run&lt;T&gt;</code> method I couldn't stop thinking about it. <em>C# doesn't allow us to &quot;partially apply&quot;</em>... Does it mean that C# type system isn't flexible enough to define <code>Middleware&lt;T&gt;</code>? What a great riddle!</p>
+<p>I decided to run some experiments and try to answer the following question:</p>
+<blockquote>
+<p>Is it possible to define <code>Middleware&lt;T&gt;</code> in C# in a type-safe manner without falling back to <code>dynamic</code>?</p>
+</blockquote>
+<h2 id="solution">Solution</h2>
+<p>I started by trying to understand the bigger picture of what problem <code>Middleware&lt;T&gt;</code> is supposed to solve. It defines resource of type <code>&lt;T&gt;</code> and accepts a function to apply to the resource. This function can return arbitrary type, which is unknown at the time when <code>Middleware&lt;T&gt;</code> is created. This coupling is the main problem. As Enrico correctly pointed out C# doesn't allow us to &quot;partially apply&quot; type so solving this problem will require splitting generic parameters <code>&lt;T, TResult&gt;</code> into two constructs. It is impossible to do it with a single delegate, but C# has much more to offer. After all, it is an Object Oriented language.</p>
+<h3 id="interface">Interface</h3>
+<p>When I was looking for how to represent <code>Middleware&lt;T&gt;</code> as object I found an elegant solution which I will call <code>IUsable&lt;T&gt;</code> to separate it from the middleware.</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title">IUsable</span>&lt;<span class="hljs-title">T</span>&gt;
+{
+    TResult Use&lt;TResult&gt;(Func&lt;T, TResult&gt; func);
+}
+</code></pre>
+<p>In its definition <code>IUsable&lt;T&gt;</code> has two type parameters: <code>T</code> for the resource type used on the interface and <code>TResult</code> for the result of computation used on the <code>Use</code> method. This separation is the key to the partial application of type parameters. When you create an instance of <code>IUsable&lt;T&gt;</code> you do need to specify one type parameter (partial) and when you want to use the resource with <code>Use&lt;TResult&gt;</code> you specify second type parameter. Pretty simple when you think about it.</p>
+<p>For this interface to follow monadic composition pattern I also need to define few additional operators.</p>
+<h3 id="amplification">Amplification</h3>
+<p>First of all we do need a way to go from a regular value to <code>IUsable&lt;T&gt;</code> (amplify type). This can be achieved with the following extension methods <code>AsUsable&lt;T&gt;</code> and <code>AsUsableOnce&lt;T&gt;</code>. I decided to create both options because it is very common to use <code>IDisposable</code> resource just once. Since there is a disconnect between the time usable is instantiated and the time when the value is actually used I created specialized classes to keep the state.</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">partial</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Usable</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IUsable&lt;T&gt; AsUsable&lt;T&gt;(<span class="hljs-keyword">this</span> T <span class="hljs-keyword">value</span>) =&gt;
+        <span class="hljs-keyword">new</span> ValueUsable&lt;T&gt;(<span class="hljs-keyword">value</span>);
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IUsable&lt;T&gt; AsUsableOnece&lt;T&gt;(<span class="hljs-keyword">this</span> T <span class="hljs-keyword">value</span>)
+        <span class="hljs-keyword">where</span> T : IDisposable =&gt;
+        <span class="hljs-keyword">new</span> UsableOnce&lt;T&gt;(<span class="hljs-keyword">value</span>);
+
+    <span class="hljs-keyword">internal</span> <span class="hljs-keyword">class</span> <span class="hljs-title">ValueUsable</span>&lt;<span class="hljs-title">T</span>&gt; : <span class="hljs-title">IUsable</span>&lt;<span class="hljs-title">T</span>&gt;
+    {
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> T <span class="hljs-keyword">value</span>;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ValueUsable</span>(<span class="hljs-params">T <span class="hljs-keyword">value</span></span>) </span>=&gt;
+            <span class="hljs-keyword">this</span>.<span class="hljs-keyword">value</span> = <span class="hljs-keyword">value</span>;
+
+        <span class="hljs-keyword">public</span> TResult Use&lt;TResult&gt;(Func&lt;T, TResult&gt; func) =&gt;
+            func(<span class="hljs-keyword">this</span>.<span class="hljs-keyword">value</span>);
+    }
+
+    <span class="hljs-keyword">internal</span> <span class="hljs-keyword">class</span> <span class="hljs-title">UsableOnce</span>&lt;<span class="hljs-title">T</span>&gt; : <span class="hljs-title">IUsable</span>&lt;<span class="hljs-title">T</span>&gt;
+        <span class="hljs-title">where</span> <span class="hljs-title">T</span> : <span class="hljs-title">IDisposable</span>
+    {
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> T <span class="hljs-keyword">value</span>;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">UsableOnce</span>(<span class="hljs-params">T <span class="hljs-keyword">value</span></span>) </span>=&gt;
+            <span class="hljs-keyword">this</span>.<span class="hljs-keyword">value</span> = <span class="hljs-keyword">value</span>;
+
+        <span class="hljs-keyword">public</span> TResult Use&lt;TResult&gt;(Func&lt;T, TResult&gt; func)
+        {
+            <span class="hljs-keyword">using</span> (<span class="hljs-keyword">this</span>.<span class="hljs-keyword">value</span>)
+            {
+                <span class="hljs-keyword">return</span> func(<span class="hljs-keyword">value</span>);
+            }
+        }
+    }
+}
+</code></pre>
+<h3 id="composition">Composition</h3>
+<p>Second, we need a way to compose two usables. Since this post is about C# I will demonstrate implementation of <code>SelectMany</code> with 3 type parameters. Although it is not the signature of the canonical bind operator, this is the code you want in your application as this method unlocks the power of composition with LINQ expression language. Similarly to the amplification section, here I also decided to create a specialized inner class to save usable and selector delegates for the time when usable is used (lazy evaluation).</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">partial</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Usable</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IUsable&lt;TResult&gt; SelectMany&lt;TOuter, TInner, TResult&gt;(
+        <span class="hljs-keyword">this</span> IUsable&lt;TOuter&gt; outerUsable,
+        Func&lt;TOuter, IUsable&lt;TInner&gt;&gt; innerUsableSelector,
+        Func&lt;TOuter, TInner, TResult&gt; resultSelector)
+    {
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SelectManyUsable&lt;TOuter, TInner, TResult&gt;(
+            outerUsable, innerUsableSelector, resultSelector);
+    }
+
+    <span class="hljs-keyword">internal</span> <span class="hljs-keyword">class</span> <span class="hljs-title">SelectManyUsable</span>&lt;<span class="hljs-title">TOuter</span>, <span class="hljs-title">TInner</span>, <span class="hljs-title">T</span>&gt; : <span class="hljs-title">IUsable</span>&lt;<span class="hljs-title">T</span>&gt;
+    {
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> IUsable&lt;TOuter&gt; outerUsable;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> Func&lt;TOuter, IUsable&lt;TInner&gt;&gt; innerUsableSelector;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> Func&lt;TOuter, TInner, T&gt; resultSelector;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">SelectManyUsable</span>(<span class="hljs-params">
+            IUsable&lt;TOuter&gt; outerUsable,
+            Func&lt;TOuter, IUsable&lt;TInner&gt;&gt; innerUsableSelector,
+            Func&lt;TOuter, TInner, T&gt; resultSelector</span>)
+        </span>{
+            <span class="hljs-keyword">this</span>.outerUsable = outerUsable;
+            <span class="hljs-keyword">this</span>.innerUsableSelector = innerUsableSelector;
+            <span class="hljs-keyword">this</span>.resultSelector = resultSelector;
+        }
+
+        <span class="hljs-keyword">public</span> TResult Use&lt;TResult&gt;(Func&lt;T, TResult&gt; func)
+        {
+            <span class="hljs-keyword">return</span> outerUsable.Use(outerScope =&gt;
+            {
+                <span class="hljs-keyword">return</span> innerUsableSelector(outerScope).Use(innerScope =&gt;
+                {
+                    <span class="hljs-keyword">return</span> func(resultSelector(outerScope, innerScope));
+                });
+            });
+        }
+    }
+}
+</code></pre>
+<h3 id="extraction">Extraction</h3>
+<p>Finally we need a way to extract the value from the usable (exit monad). One natural option is actually use the usable and calculate result. I decided, however, to add helper method to easily extract the value from usable. Please notice that it applies identity function and returns resource outside of the <code>Use&lt;TResult&gt;</code> scope. This is potentially risky behavior as one could try to extract disposable resource just to discover that it already has been disposed.</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">partial</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Usable</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> T Value&lt;T&gt;(<span class="hljs-keyword">this</span> IUsable&lt;T&gt; usable)
+    {
+        <span class="hljs-keyword">return</span> usable.Use(<span class="hljs-keyword">value</span> =&gt; <span class="hljs-keyword">value</span>);
+    }
+}
+</code></pre>
+<p>That's it! These are the elements we need to replicate behavior of <code>Middleware&lt;T&gt;</code> in a type-safe way. Now, let's see how to use it all in an application.</p>
+<h3 id="example">Example</h3>
+<p>To demonstrate how to use the <code>IUsable&lt;T&gt;</code> I will use the same example that was introduced in the book. It shows how to build a repository (Repository pattern) to access <code>Orders</code> stored in SQL database. We will focus on the <code>Delete</code> method which should have the following properties:</p>
+<ul>
+<li>Delete operation executes in the <code>TraceSourceScope</code> to keep the logs clean.</li>
+<li>When we delete orders we also need to delete order lines within the same transaction.</li>
+<li>All disposable resources are released.</li>
+</ul>
+<p>The following code satisfies these requirements. Please notice how <code>DeleteUsable</code> was implemented. It is a single LINQ expression which combines trace, connection and transaction to create a right scope for executing SQL statements. All the resources are amplified to <code>IUsable&lt;T&gt;</code> with <code>AsUsableOnce&lt;T&gt;</code> which guarantees that they are going to be released. The computation in select combines two steps. Finally, there is <code>Delete</code> method to simplify the interface in case callers don't need to compose delete operation with other operations in the system.</p>
+<blockquote>
+<p><em>In the next post I will show how we can introduce new <code>SelectMany</code> operator to remove <code>AsUsableOnce</code> calls.</em></p>
+</blockquote>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">using</span> System;
+
+<span class="hljs-comment">// NuGet</span>
+<span class="hljs-keyword">using</span> Dapper;
+<span class="hljs-keyword">using</span> System.Data.SqlClient;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Logging.TraceSource;
+
+<span class="hljs-keyword">namespace</span> <span class="hljs-title">UsableRepositories</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">OrdersRepository</span>
+    {
+        <span class="hljs-keyword">const</span> <span class="hljs-keyword">string</span> deleteLines = <span class="hljs-string">"DELETE OrderLines WHERE OrderId = @Id"</span>;
+        <span class="hljs-keyword">const</span> <span class="hljs-keyword">string</span> deleteOrder = <span class="hljs-string">"DELETE Orders WHERE OrderId = @Id"</span>;
+
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> <span class="hljs-keyword">string</span> connectionString;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">OrdersRepository</span>(<span class="hljs-params"><span class="hljs-keyword">string</span> connectionString</span>) </span>=&gt;
+            <span class="hljs-keyword">this</span>.connectionString = connectionString;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Delete</span>(<span class="hljs-params">Guid id</span>) </span>=&gt;
+            DeleteUsable(id).Value();
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> IUsable&lt;<span class="hljs-keyword">int</span>&gt; <span class="hljs-title">DeleteUsable</span>(<span class="hljs-params">Guid id</span>) </span>=&gt;
+            <span class="hljs-function"><span class="hljs-keyword">from</span> trace <span class="hljs-keyword">in</span> new <span class="hljs-title">TraceSourceScope</span>(<span class="hljs-params"><span class="hljs-string">"Execute: DeleteUsable"</span></span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">from</span> conn <span class="hljs-keyword">in</span> new <span class="hljs-title">SqlConnection</span>(<span class="hljs-params">connectionString</span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">from</span> tran <span class="hljs-keyword">in</span> conn.<span class="hljs-title">BeginTransaction</span>(<span class="hljs-params"></span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">select</span> conn.<span class="hljs-title">Execute</span>(<span class="hljs-params">deleteLines, id, tran</span>)
+                + conn.<span class="hljs-title">Execute</span>(<span class="hljs-params">deleteOrder, id, tran</span>)</span>;
+    }
+}
+</code></pre>
+<h2 id="performance-analysis">Performance analysis</h2>
+<p>We've seen how <code>IUsable&lt;T&gt;</code> can help with writing succinct code with, but did we have to sacrifice performance to achieve it? To investigate the impact on performance I prepared a benchmark which compares classical <code>using</code> statement, <code>Middleware&lt;T&gt;</code> and <code>IUsable&lt;T&gt;</code> in a typical scenario where you want to execute some operation in the context of 3 disposable resources. I selected <code>TraceSourceScope</code> as the resource because it is super fast, thus, the benchmark should highlight the cost of composition rather than the costs of acquiring and releasing resources.</p>
+<p>Benchmark was defined with <a href="https://github.com/dotnet/BenchmarkDotNet">BenchmarkDotNet</a>, which is a great library/runner for .NET.</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">UsableBenchmark</span>
+{
+    [<span class="hljs-meta">Params(1000)</span>]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> N;
+
+    [<span class="hljs-meta">Benchmark</span>]
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">UsingStatement</span>(<span class="hljs-params"></span>)
+    </span>{
+        <span class="hljs-keyword">using</span> (<span class="hljs-keyword">var</span> s1 = <span class="hljs-keyword">new</span> TraceSourceScope(<span class="hljs-number">1</span>))
+        <span class="hljs-keyword">using</span> (<span class="hljs-keyword">var</span> s2 = <span class="hljs-keyword">new</span> TraceSourceScope(<span class="hljs-number">10</span>))
+        <span class="hljs-keyword">using</span> (<span class="hljs-keyword">var</span> s3 = <span class="hljs-keyword">new</span> TraceSourceScope(<span class="hljs-number">100</span>))
+        {
+            Trace.WriteLine(s1.Operation + s2.Operation + s3.Operation;);
+        }
+    }
+
+    [<span class="hljs-meta">Benchmark</span>]
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Middleware</span>(<span class="hljs-params"></span>)
+    </span>{
+        <span class="hljs-keyword">var</span> middleware =
+            <span class="hljs-function"><span class="hljs-keyword">from</span> s1 <span class="hljs-keyword">in</span> <span class="hljs-title">TraceSource</span>(<span class="hljs-params"><span class="hljs-number">1</span></span>)
+            <span class="hljs-keyword">from</span> s2 <span class="hljs-keyword">in</span> <span class="hljs-title">TraceSource</span>(<span class="hljs-params"><span class="hljs-number">10</span></span>)
+            <span class="hljs-keyword">from</span> s3 <span class="hljs-keyword">in</span> <span class="hljs-title">TraceSource</span>(<span class="hljs-params"><span class="hljs-number">100</span></span>)
+            <span class="hljs-keyword">select</span> s1.Operation + s2.Operation + s3.Operation</span>;
+
+        Trace.WriteLine(middleware.Run());
+    }
+
+    [<span class="hljs-meta">Benchmark</span>]
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Usable_AsUsableOnce</span>(<span class="hljs-params"></span>)
+    </span>{
+        <span class="hljs-keyword">var</span> usable =
+            <span class="hljs-function"><span class="hljs-keyword">from</span> s1 <span class="hljs-keyword">in</span> new <span class="hljs-title">TraceSourceScope</span>(<span class="hljs-params"><span class="hljs-number">1</span></span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">from</span> s2 <span class="hljs-keyword">in</span> new <span class="hljs-title">TraceSourceScope</span>(<span class="hljs-params"><span class="hljs-number">10</span></span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">from</span> s3 <span class="hljs-keyword">in</span> new <span class="hljs-title">TraceSourceScope</span>(<span class="hljs-params"><span class="hljs-number">111</span></span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">select</span> s1.Operation + s2.Operation + s3.Operation</span>;
+
+        Trace.WriteLine(usable.Value());
+    }
+
+    [<span class="hljs-meta">Benchmark</span>]
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Usable_CustomUsable</span>(<span class="hljs-params"></span>)
+    </span>{
+        <span class="hljs-keyword">var</span> usable =
+            <span class="hljs-function"><span class="hljs-keyword">from</span> s1 <span class="hljs-keyword">in</span> new <span class="hljs-title">UsableTraceSourceScope</span>(<span class="hljs-params"><span class="hljs-number">1</span></span>)
+            <span class="hljs-keyword">from</span> s2 <span class="hljs-keyword">in</span> new <span class="hljs-title">UsableTraceSourceScope</span>(<span class="hljs-params"><span class="hljs-number">10</span></span>)
+            <span class="hljs-keyword">from</span> s3 <span class="hljs-keyword">in</span> new <span class="hljs-title">UsableTraceSourceScope</span>(<span class="hljs-params"><span class="hljs-number">100</span></span>)
+            <span class="hljs-keyword">select</span> s1.Operation + s2.Operation + s3.Operation</span>;
+
+        Trace.WriteLine(usable.Value());
+    }
+
+
+    <span class="hljs-comment">// [...]</span>
+}
+
+</code></pre>
+<p>After running this benchmark for a couple of minutes I received the following result. It was full of surprises!</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>N</th>
+<th style="text-align:right">Mean</th>
+<th style="text-align:right">Error</th>
+<th style="text-align:right">StdDev</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UsingStatement</td>
+<td>1000</td>
+<td style="text-align:right">765.5 us</td>
+<td style="text-align:right">7.996 us</td>
+<td style="text-align:right">7.089 us</td>
+</tr>
+<tr>
+<td>Middleware</td>
+<td>1000</td>
+<td style="text-align:right">621.4 us</td>
+<td style="text-align:right">8.591 us</td>
+<td style="text-align:right">7.615 us</td>
+</tr>
+<tr>
+<td>Usable_AsUsableOnce</td>
+<td>1000</td>
+<td style="text-align:right">623.0 us</td>
+<td style="text-align:right">8.354 us</td>
+<td style="text-align:right">7.406 us</td>
+</tr>
+<tr>
+<td>Usable_CustomUsable</td>
+<td>1000</td>
+<td style="text-align:right">622.0 us</td>
+<td style="text-align:right">8.825 us</td>
+<td style="text-align:right">7.823 us</td>
+</tr>
+</tbody>
+</table>
+<p>First of all, There was no difference between <code>Middleware&lt;T&gt;</code> and <code>IUsable&lt;T&gt;</code>. This was a great news because it means that the extra state required to implement <code>IUsable&lt;T&gt;</code> balances the impact of <code>dynamic</code> in <code>Middleware&lt;T&gt;</code>. Second, very practical observation, was that there was no difference between composing usables with <code>AsUsableOnce</code> or by creating a custom class. Finally, both <code>Middleware&lt;T&gt;</code> and <code>Usable&lt;T&gt;</code> showed noticeable improvement from the classical <code>using</code> statement. This one is hard for me to trust, but I haven't spot anything wrong in the benchmark to reject this result so I decided to keep it here.</p>
+<h2 id="conclusions">Conclusions</h2>
+<p>Though this post I wanted to demonstrate that it is possible to implement the <code>Middleware&lt;T&gt;</code> pattern in a type-safe way without falling back to <code>dynamic</code>. Solution involved combining Object-Oriented code with Functional Programming concepts to work around limitations of C# type system. Although <code>IUsable&lt;T&gt;</code> was defined as an interface and not a delegate, I could define necessary operators to fully implement monad pattern and enable monadic composition through LINQ expressions.</p>
+<p>One could think why to go through all this effort to implement this pattern when you can simply use <code>using</code> statement to manage the lifetime of your resources. I'll answer with a citation from Enrico's book because I think he captured it well.</p>
+<blockquote>
+<p>One fundamental difference between the functional and imperative style is that imperative code relies on statements; functional code relies on expressions. In essence, expressions have a value; statements don’t. While expressions such as function calls can have side effects, statements only have side effects, so they don’t compose.</p>
+<p><em>~Functional Programming in C#: How to write better C# code; section 5.5.1. Expressions vs. statements</em></p>
+</blockquote>
+<p>Yes, it is all about side-effects and composition! Next time I will show how we can add few specialized operators to help us with <code>IDisposable</code> composition. This will allow us to skip the <code>AsUsableOnece</code> used throughout examples in this post.</p>
+<blockquote>
+<p>PS. I'm still looking for a good name for a library. So far I selected &quot;usable&quot; to emphasize relationship to <code>using</code> statement because cleaning up (disposing) resources is one of the most important use cases for <code>IUsable&lt;T&gt;</code>. If you have some better ideas please leave them in the comments section.</p>
+</blockquote>
+<h2 id="references">References:</h2>
+<ol>
+<li><a href="https://www.amazon.com/Functional-Programming-write-better-code/dp/1617293954">Functional Programming in C#: How to write better C# code - Amazon</a></li>
+<li><a href="https://github.com/la-yumba/functional-csharp-code">Functional Programming in C#: How to write better C# code - Code samples</a></li>
+<li><a href="https://ericlippert.com/category/monads/page/1/">Fabulous adventures in coding - Monads</a></li>
+<li><a href="https://github.com/la-yumba/functional-csharp-code/blob/master/Examples/Chapter11/Middleware/Middleware.cs#L10">Middleware - Code definition</a></li>
+<li><a href="https://github.com/la-yumba/functional-csharp-code/blob/master/Examples/Chapter11/Middleware/DbLogger.cs">Middleware - Code examples</a></li>
+<li><a href="https://github.com/StanislawSwierc/Usable">Usable Extensions - Source code</a></li>
+<li><a href="https://github.com/dotnet/BenchmarkDotNet">BenchmarkDotNet - Powerful .NET library for benchmarking</a></li>
+</ol>

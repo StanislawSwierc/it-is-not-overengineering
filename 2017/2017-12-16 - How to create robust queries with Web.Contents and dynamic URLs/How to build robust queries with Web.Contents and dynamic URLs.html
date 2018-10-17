@@ -1,0 +1,23 @@
+<h1 id="how-to-build-robust-queries-with-webcontents-and-dynamic-urls">How to build robust queries with Web.Contents and dynamic URLs</h1>
+<p>Tags: <code>Power BI</code>, <code>Power Query</code>, <code>Web.Contents</code></p>
+<p>Power Query is a great language for importing data from plethora of different sources. By far the most versatile source is the <code>Web.Contents</code>, which allows you to access data from any web page, REST API, or any HTTP endpoint. It is the building block for many Data Connectors both internal to Power BI and published externally by Power Query enthusiasts.</p>
+<p>One not so obvious, thus very frustrating feature of <code>Web.Contents</code> function is that it works differently in Power BI Desktop and Power BI Service. When working in Desktop version you can dynamically build the URL and it will work just fine, but when you publish your dataset, you won't be able to refresh it. Many people run into this problem in the past and created several ideas in the Power BI forum related to this problem . At the time I'm writing this, there are 368 votes for the idea to [<a href="https://ideas.powerbi.com/forums/265200-power-bi-ideas/suggestions/10927416-web-contents-should-support-scheduled-refresh-ev">1</a>, <a href="https://ideas.powerbi.com/forums/265200-power-bi-ideas/suggestions/9312540-make-functions-refreshable-when-the-data-source-is">2</a>].</p>
+<p>All of these ideas are still open because changing this behavior would require a fundamental change in how Power Query engine handled discovery and authentication for different data source. As explained by Curth from Power BI Team in one of the threads[<a href="http://community.powerbi.com/t5/Integrations-with-Files-and/Refreshing-queries-with-functions-doens-t-work/td-p/2450">3</a>].</p>
+<blockquote>
+<p><em>This is currently correct; queries where data access happens inside a function and where the data source is dependent on parameters to the function can't currently be refreshed. That's because we're doing static analysis of the query to discover the data source, and our static analysis can't yet handle this scenario.</em></p>
+</blockquote>
+<p>While this behavior might persist for long, there are some good workarounds. For example, Chris Webb explains how one can use <code>RelativePath</code> and <code>Query</code> options to add dynamicity to the query while preserving static URL, thus, meeting requirements of th static analysis [<a href="https://blog.crossjoin.co.uk/2016/08/23/web-contents-m-functions-and-dataset-refresh-errors-in-power-bi/">4</a>]. In this post I would like to describe a design pattern I applied in one of my projects [<a href="https://marketplace.visualstudio.com/items?itemName=stansw.vsts-open-in-powerbi">5</a>]. The strongest advantage is that with this approach you can easily refactor your code to make your queries refreshable in Power BI Service.</p>
+<h2 id="problem-statement">Problem statement</h2>
+<p>Imagine that your data source is GitHub and you want to import all the issues created in the last 30 days. This is dynamic query as it contains element of current time. Is is also close to real life problems as analysis of the recent time period is a very common problem.</p>
+<pre><code class="language-pq">since = DateTimeZone.UtcNow() - #duration(7, 0, 0, 0),
+</code></pre>
+<pre><code>https://api.github.com/repos/StanislawSwierc/it-is-not-overengineering/issues?since=2017-12-01T00:00:00Z
+</code></pre>
+<h2 id="references">References:</h2>
+<ol>
+<li><a href="https://ideas.powerbi.com/forums/265200-power-bi-ideas/suggestions/10927416-web-contents-should-support-scheduled-refresh-ev">Power BI Ideas - Web.Contents() should support scheduled refresh even with dynamic URL</a></li>
+<li><a href="https://ideas.powerbi.com/forums/265200-power-bi-ideas/suggestions/9312540-make-functions-refreshable-when-the-data-source-is">Power BI Ideas - Make functions refreshable when the data source is a parameter of the function</a></li>
+<li><a href="http://community.powerbi.com/t5/Integrations-with-Files-and/Refreshing-queries-with-functions-doens-t-work/td-p/2450">Power BI Help - Integrations with Files and Services</a></li>
+<li><a href="https://blog.crossjoin.co.uk/2016/08/23/web-contents-m-functions-and-dataset-refresh-errors-in-power-bi/">Chris Webb's BI Blog - Web.Contents(), M Functions And Dataset Refresh Errors In Power BI</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=stansw.vsts-open-in-powerbi">Visual Studio Team Services Marketplace - Open in Power BI</a></li>
+</ol>
