@@ -11,6 +11,7 @@ module.exports = function (grunt) {
                         src: [
                             '2013/**/*.md',
                             '2014/**/*.md',
+                            '2017/**/*.md',
                             '2017/**/*.md'
                         ],
                         rename: function (dest, src) {
