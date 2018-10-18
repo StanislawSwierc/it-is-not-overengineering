@@ -1,0 +1,119 @@
+<h1 id="idisposable-monad-iusable-part-2">IDisposable monad (IUsable) - part 2</h1>
+<p>Tags: <code>Functional programming</code>, <code>C#</code></p>
+<p>Previously I introduced <code>IUsable&lt;T&gt;</code> monad which can be used to compose computations in a safe way and guarantee that all the resources are disposed. In the examples there were many calls to <code>AsUsableOnce&lt;T&gt;</code> which were amplifying <code>IDisposable</code> types. In this post I will explain how we can add additional operator to simplify that code.</p>
+<p>We will start with the same example as before. Please notice the presence of calls to <code>AsUsableOnce&lt;T&gt;</code>. They were necessary because the <code>SelectMany</code> operator expected <code>Func&lt;TOuter, IUsable&lt;TInner&gt;&gt;</code> selector and <code>AsUsableOnce&lt;T&gt;</code> was one of the way to provide required return type.</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">using</span> System;
+
+<span class="hljs-comment">// NuGet</span>
+<span class="hljs-keyword">using</span> Dapper;
+<span class="hljs-keyword">using</span> System.Data.SqlClient;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Logging.TraceSource;
+
+<span class="hljs-keyword">namespace</span> <span class="hljs-title">UsableRepositories</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">OrdersRepository</span>
+    {
+        <span class="hljs-keyword">const</span> <span class="hljs-keyword">string</span> deleteLines = <span class="hljs-string">"DELETE OrderLines WHERE OrderId = @Id"</span>;
+        <span class="hljs-keyword">const</span> <span class="hljs-keyword">string</span> deleteOrder = <span class="hljs-string">"DELETE Orders WHERE OrderId = @Id"</span>;
+
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> <span class="hljs-keyword">string</span> connectionString;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">OrdersRepository</span>(<span class="hljs-params"><span class="hljs-keyword">string</span> connectionString</span>) </span>=&gt;
+            <span class="hljs-keyword">this</span>.connectionString = connectionString;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Delete</span>(<span class="hljs-params">Guid id</span>) </span>=&gt;
+            DeleteUsable(id).Value();
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> IUsable&lt;<span class="hljs-keyword">int</span>&gt; <span class="hljs-title">DeleteUsable</span>(<span class="hljs-params">Guid id</span>) </span>=&gt;
+            <span class="hljs-function"><span class="hljs-keyword">from</span> trace <span class="hljs-keyword">in</span> new <span class="hljs-title">TraceSourceScope</span>(<span class="hljs-params"><span class="hljs-string">"Execute: DeleteUsable"</span></span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">from</span> conn <span class="hljs-keyword">in</span> new <span class="hljs-title">SqlConnection</span>(<span class="hljs-params">connectionString</span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">from</span> tran <span class="hljs-keyword">in</span> conn.<span class="hljs-title">BeginTransaction</span>(<span class="hljs-params"></span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">select</span> conn.<span class="hljs-title">Execute</span>(<span class="hljs-params">deleteLines, id, tran</span>)
+                + conn.<span class="hljs-title">Execute</span>(<span class="hljs-params">deleteOrder, id, tran</span>)</span>;
+    }
+}
+</code></pre>
+<p>Knowing that <code>IUsable&lt;T&gt;</code> fits perfectly for the scenarios which use <code>IDisposable</code> resources we can optimize for this case. Just as we created <code>SelectMany</code> operator to work with <code>IUsable&lt;T&gt;</code> we can create a new operator dedicated to <code>IDisposable</code>. Since both operators have the same signature we need to put them in a separate classes.</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title">UsableDisposable</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IUsable&lt;TResult&gt; SelectMany&lt;TOuter, TInner, TResult&gt;(
+        <span class="hljs-keyword">this</span> IUsable&lt;TOuter&gt; outerUsable,
+        Func&lt;TOuter, TInner&gt; innerDisposableSelector,
+        Func&lt;TOuter, TInner, TResult&gt; resultSelector)
+        <span class="hljs-keyword">where</span> TInner : IDisposable
+    {
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SelectManyDisposableUsable&lt;TOuter, TInner, TResult&gt;(
+            outerUsable, innerDisposableSelector, resultSelector);
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">class</span> <span class="hljs-title">SelectManyDisposableUsable</span>&lt;<span class="hljs-title">TOuter</span>, <span class="hljs-title">TInner</span>, <span class="hljs-title">T</span>&gt; : <span class="hljs-title">IUsable</span>&lt;<span class="hljs-title">T</span>&gt;
+        <span class="hljs-title">where</span> <span class="hljs-title">TInner</span> : <span class="hljs-title">IDisposable</span>
+    {
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> IUsable&lt;TOuter&gt; source;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> Func&lt;TOuter, TInner&gt; collectionSelector;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> Func&lt;TOuter, TInner, T&gt; resultSelector;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">SelectManyDisposableUsable</span>(<span class="hljs-params">
+            IUsable&lt;TOuter&gt; outerUsable,
+            Func&lt;TOuter, TInner&gt; innerDisposableSelector,
+            Func&lt;TOuter, TInner, T&gt; resultSelector</span>)
+        </span>{
+            <span class="hljs-keyword">this</span>.source = outerUsable;
+            <span class="hljs-keyword">this</span>.collectionSelector = innerDisposableSelector;
+            <span class="hljs-keyword">this</span>.resultSelector = resultSelector;
+        }
+
+        <span class="hljs-keyword">public</span> TResult Use&lt;TResult&gt;(Func&lt;T, TResult&gt; func)
+        {
+            <span class="hljs-keyword">return</span> source.Use(outer =&gt;
+            {
+                <span class="hljs-keyword">using</span> (<span class="hljs-keyword">var</span> inner = collectionSelector(outer))
+                {
+                    <span class="hljs-keyword">return</span> func(resultSelector(outer, inner));
+                }
+            });
+        }
+    }
+}
+</code></pre>
+<p>The biggest differences from the operator introduced in the previous post are the selector signature which accepts <code>TInner</code> directly and the <code>where</code> constraint on the type parameter. Just as before we had to introduce a type to hold the state (<code>SelectManyDisposableUsable</code>).</p>
+<p>With this operator we can simplify original example to the following form:</p>
+<pre class="hljs"><code class="language-cs"><span class="hljs-keyword">using</span> System;
+
+<span class="hljs-comment">// NuGet</span>
+<span class="hljs-keyword">using</span> Dapper;
+<span class="hljs-keyword">using</span> System.Data.SqlClient;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Logging.TraceSource;
+
+<span class="hljs-keyword">namespace</span> <span class="hljs-title">UsableRepositories</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">OrdersRepository</span>
+    {
+        <span class="hljs-keyword">const</span> <span class="hljs-keyword">string</span> deleteLines = <span class="hljs-string">"DELETE OrderLines WHERE OrderId = @Id"</span>;
+        <span class="hljs-keyword">const</span> <span class="hljs-keyword">string</span> deleteOrder = <span class="hljs-string">"DELETE Orders WHERE OrderId = @Id"</span>;
+
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> <span class="hljs-keyword">string</span> connectionString;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">OrdersRepository</span>(<span class="hljs-params"><span class="hljs-keyword">string</span> connectionString</span>) </span>=&gt;
+            <span class="hljs-keyword">this</span>.connectionString = connectionString;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Delete</span>(<span class="hljs-params">Guid id</span>) </span>=&gt;
+            DeleteUsable(id).Value();
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> IUsable&lt;<span class="hljs-keyword">int</span>&gt; <span class="hljs-title">DeleteUsable</span>(<span class="hljs-params">Guid id</span>) </span>=&gt;
+            <span class="hljs-function"><span class="hljs-keyword">from</span> trace <span class="hljs-keyword">in</span> new <span class="hljs-title">TraceSourceScope</span>(<span class="hljs-params"><span class="hljs-string">"Execute: DeleteUsable"</span></span>).<span class="hljs-title">AsUsableOnece</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">from</span> conn <span class="hljs-keyword">in</span> new <span class="hljs-title">SqlConnection</span>(<span class="hljs-params">connectionString</span>)
+            <span class="hljs-keyword">from</span> tran <span class="hljs-keyword">in</span> conn.<span class="hljs-title">BeginTransaction</span>(<span class="hljs-params"></span>)
+            <span class="hljs-keyword">select</span> conn.<span class="hljs-title">Execute</span>(<span class="hljs-params">deleteLines, id, tran</span>)
+                + conn.<span class="hljs-title">Execute</span>(<span class="hljs-params">deleteOrder, id, tran</span>)</span>;
+    }
+}
+</code></pre>
+<p>There is still one call to <code>AsUsableOnce&lt;T&gt;</code> to enter the monad, but once we are there, we can compose it with <code>IDisposable</code> types without leaving it! Of course as long as we are in the monad we benefit from all its properties, which in this case is guaranteed disposal of all the resources.</p>
+<p>What is a little surprising and amazing at the same time is that C# compiler can correctly pick the right extension method for each composition pattern. When you compose two usables, it selects one operator, but when you compose usable with <code>IDisposable</code> it selects another. There is one quirk when you have a class that implements <code>IUsable&lt;T&gt;</code> as compiler might still want to select the <code>IDisposable</code> version. This can be easily solved by adding <code>as IUsable&lt;T&gt;</code> suffix to force the right operator. This trick would work also if somebody decided to implement both interfaces on the same class.</p>
+<p>Operators introduced in the previous and this post are by far the most important for working <code>IUsable&lt;T&gt;</code>. In the next post I will introduce other operators which can further simplify the code in specific scenarios.</p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="http://www.itisnotoverengineering.com/2018/10/idisposable-monad-iusable-part-1.html">It is not overengineering - IDisposable monad (IUsable) - part 1</a></li>
+<li><a href="https://github.com/StanislawSwierc/Usable">Usable Extensions - Source code</a></li>
+</ol>
