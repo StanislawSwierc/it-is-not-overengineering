@@ -2,7 +2,7 @@
 
 Tags: `Functional programming`, `C#`
 
-## Introduction
+# Introduction
 
 I've always said that C# is my favorite functional programming language. It is not a functional-first language so you have to be careful, but results are worth it as the FP code tends to be clearer and more maintainable. Recently, I discovered that there was a new book published on the topic of FP in C# - "*Functional Programming in C#: How to write better C# code*" by Enrico Buonanno. I learned about it from a newsletter listing recommended books on Safari Books Online. This was in fact a great recommendation!
 
@@ -16,7 +16,7 @@ Requirement to define behavior before and after some operation is very common. E
 
 Another great thing about `Middleware<T>` is the fact that you can compose them to form data pipelines. For example you could combine "stopwatch" middleware with "open database connection" middleware and "open transaction scope" middleware to define pipeline for working with databases in your application. I recommend reading the book for other great examples.
 
-## Problem statement
+# Problem statement
 
 In the book `Middleware<T>` was defined as the following [delegate with a set of extension methods][4].
 
@@ -37,22 +37,22 @@ public static class Middleware
 
 There is one important element in this definition worth discussing in detail - `Middleware<T>` accepts and returns `dynamic`! Why is it a big deal? Remember when I praised this pattern for making sure you cannot get it wrong? While it still guarantees that teardown code executes, with `dynamic` there are other traps you may fall into. Author also identified this as a problem:
 
->The problem is that `T` (the input to the continuation) and R (its output) are not known at the same time. For example, suppose you want to create a `Middleware` instance from a function such as `Connect`, which has signature
->
-> `public static R Connect<R>(ConnectionString connString, Func<SqlConnection, R> func)`
->
->The continuation accepted by Connect takes a `SqlConnection` as input, so we can use Connect to define a `Middleware<SqlConnection>`. That means the `T` type variable in `Middleware<T>` resolves to `SqlConnection`, but we don't yet know what the given continuation will yield, so we can't yet resolve the `R` type variable in `Connect<R>`.
->
->**Unfortunately, C# doesn't allow us to "partially apply" type variables; hence, dynamic. So although conceptually we're thinking of combining HOFs of this type**
->
->`(T → R) → R`
->
->we’re modeling them as follows:
->
->`(T → dynamic) → dynamic`
->
->Later you'll see that you can still work with Middleware without compromising on type safety.
->
+>The problem is that `T` (the input to the continuation) and R (its output) are not known at the same time. For example, suppose you want to create a `Middleware` instance from a function such as `Connect`, which has signature<br>
+><br>
+> `public static R Connect<R>(ConnectionString connString, Func<SqlConnection, R> func)`<br>
+><br>
+>The continuation accepted by Connect takes a `SqlConnection` as input, so we can use Connect to define a `Middleware<SqlConnection>`. That means the `T` type variable in `Middleware<T>` resolves to `SqlConnection`, but we don't yet know what the given continuation will yield, so we can't yet resolve the `R` type variable in `Connect<R>`.<br>
+><br>
+>**Unfortunately, C# doesn't allow us to "partially apply" type variables; hence, dynamic. So although conceptually we're thinking of combining HOFs of this type**<br>
+><br>
+>`(T → R) → R`<br>
+><br>
+>we’re modeling them as follows:<br>
+><br>
+>`(T → dynamic) → dynamic`<br>
+><br>
+>Later you'll see that you can still work with Middleware without compromising on type safety.<br>
+><br>
 >*~Functional Programming in C#: How to write better C# code*
 
 After I read this section it stayed in my head for long. Although Enrico explained how to alleviate this problem with `Run<T>` method I couldn't stop thinking about it. *C# doesn't allow us to "partially apply"*... Does it mean that C# type system isn't flexible enough to define `Middleware<T>`? What a great riddle!
@@ -61,11 +61,11 @@ I decided to run some experiments and try to answer the following question:
 
 >Is it possible to define `Middleware<T>` in C# in a type-safe manner without falling back to `dynamic`?
 
-## Solution
+# Solution
 
 I started by trying to understand the bigger picture of what problem `Middleware<T>` is supposed to solve. It defines resource of type `<T>` and accepts a function to apply to the resource. This function can return arbitrary type, which is unknown at the time when `Middleware<T>` is created. This coupling is the main problem. As Enrico correctly pointed out C# doesn't allow us to "partially apply" type so solving this problem will require splitting generic parameters `<T, TResult>` into two constructs. It is impossible to do it with a single delegate, but C# has much more to offer. After all, it is an Object Oriented language.
 
-### Interface
+## Interface
 
 When I was looking for how to represent `Middleware<T>` as object I found an elegant solution which I will call `IUsable<T>` to separate it from the middleware.
 
@@ -80,7 +80,7 @@ In its definition `IUsable<T>` has two type parameters: `T` for the resource typ
 
 For this interface to follow monadic composition pattern I also need to define few additional operators.
 
-### Amplification
+## Amplification
 
 First of all we do need a way to go from a regular value to `IUsable<T>` (amplify type). This can be achieved with the following extension methods `AsUsable<T>` and `AsUsableOnce<T>`. I decided to create both options because it is very common to use `IDisposable` resource just once. Since there is a disconnect between the time usable is instantiated and the time when the value is actually used I created specialized classes to keep the state.
 
@@ -124,7 +124,7 @@ public static partial class Usable
 }
 ```
 
-### Composition
+## Composition
 
 Second, we need a way to compose two usables. Since this post is about C# I will demonstrate implementation of `SelectMany` with 3 type parameters. Although it is not the signature of the canonical bind operator, this is the code you want in your application as this method unlocks the power of composition with LINQ expression language. Similarly to the amplification section, here I also decided to create a specialized inner class to save usable and selector delegates for the time when usable is used (lazy evaluation).
 
@@ -170,7 +170,7 @@ public static partial class Usable
 }
 ```
 
-### Extraction
+## Extraction
 
 Finally we need a way to extract the value from the usable (exit monad). One natural option is actually use the usable and calculate result. I decided, however, to add helper method to easily extract the value from usable. Please notice that it applies identity function and returns resource outside of the `Use<TResult>` scope. This is potentially risky behavior as one could try to extract disposable resource just to discover that it already has been disposed.
 
@@ -186,7 +186,7 @@ public static partial class Usable
 
 That's it! These are the elements we need to replicate behavior of `Middleware<T>` in a type-safe way. Now, let's see how to use it all in an application.
 
-### Example
+# Example
 
 To demonstrate how to use the `IUsable<T>` I will use the same example that was introduced in the book. It shows how to build a repository (Repository pattern) to access `Orders` stored in SQL database. We will focus on the `Delete` method which should have the following properties:
 
@@ -231,7 +231,7 @@ namespace UsableRepositories
 }
 ```
 
-## Performance analysis
+# Performance analysis
 
 We've seen how `IUsable<T>` can help with writing succinct code with, but did we have to sacrifice performance to achieve it? To investigate the impact on performance I prepared a benchmark which compares classical `using` statement, `Middleware<T>` and `IUsable<T>` in a typical scenario where you want to execute some operation in the context of 3 disposable resources. I selected `TraceSourceScope` as the resource because it is super fast, thus, the benchmark should highlight the cost of composition rather than the costs of acquiring and releasing resources.
 
@@ -307,14 +307,14 @@ After running this benchmark for a couple of minutes I received the following re
 
 First of all, There was no difference between `Middleware<T>` and `IUsable<T>`. This was a great news because it means that the extra state required to implement `IUsable<T>` balances the impact of `dynamic` in `Middleware<T>`. Second, very practical observation, was that there was no difference between composing usables with `AsUsableOnce` or by creating a custom class. Finally, both `Middleware<T>` and `Usable<T>` showed noticeable improvement from the classical `using` statement. This one is hard for me to trust, but I haven't spot anything wrong in the benchmark to reject this result so I decided to keep it here.
 
-## Conclusions
+# Conclusions
 
-Though this post I wanted to demonstrate that it is possible to implement the `Middleware<T>` pattern in a type-safe way without falling back to `dynamic`. Solution involved combining Object-Oriented code with Functional Programming concepts to work around limitations of C# type system. Although `IUsable<T>` was defined as an interface and not a delegate, I could define necessary operators to fully implement monad pattern and enable monadic composition through LINQ expressions.
+Though this post I wanted to demonstrate that it is possible to implement the `Middleware<T>` pattern in a type-safe way without falling back to `dynamic`. Solution involved combining Object-Oriented code with Functional Programming concepts to work around limitations of C# type system. Although `IUsable<T>` was defined as an interface and not a delegate, I could define necessary operators to fully implement monad pattern and enable composition through LINQ expressions.
 
 One could think why to go through all this effort to implement this pattern when you can simply use `using` statement to manage the lifetime of your resources. I'll answer with a citation from Enrico's book because I think he captured it well.
 
-> One fundamental difference between the functional and imperative style is that imperative code relies on statements; functional code relies on expressions. In essence, expressions have a value; statements don’t. While expressions such as function calls can have side effects, statements only have side effects, so they don’t compose.
->
+> One fundamental difference between the functional and imperative style is that imperative code relies on statements; functional code relies on expressions. In essence, expressions have a value; statements don’t. While expressions such as function calls can have side effects, statements only have side effects, so they don’t compose.<br>
+><br>
 >*~Functional Programming in C#: How to write better C# code; section 5.5.1. Expressions vs. statements*
 
 Yes, it is all about side-effects and composition! Next time I will show how we can add few specialized operators to help us with `IDisposable` composition. This will allow us to skip the `AsUsableOnece` used throughout examples in this post.
